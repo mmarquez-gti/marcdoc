@@ -77,6 +77,8 @@ npm run dev
 | `npm run test:integration`             | Export the corpus to Word with every template and validate it (requires Pandoc; Docker for the Open XML SDK) |
 | `npm run validation:samples`           | Export review documents for the Word Online checklist into `.work/validation/`                               |
 | `npm run validate:docx -- <file.docx>` | Validate a .docx with the Open XML SDK (requires Docker)                                                     |
+| `npm run package`                      | Build the AppImage and .deb into `dist/`                                                                     |
+| `npm run test:packaged`                | Build the unpacked app and run a smoke test against it                                                       |
 | `npm run lint`                         | Lint the code                                                                                                |
 | `npm run format`                       | Format the code                                                                                              |
 
