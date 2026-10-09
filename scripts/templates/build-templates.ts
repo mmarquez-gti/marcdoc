@@ -172,7 +172,8 @@ function headingStyle(ids: StyleIds, level: number, size: number, spacingBefore:
 function stylesXml(spec: TemplateSpec): string {
   const { ids } = spec
   const compact = '<w:spacing w:after="0" w:line="240" w:lineRule="auto"/>'
-  const tabs = '<w:tabs><w:tab w:val="center" w:pos="4252"/><w:tab w:val="right" w:pos="8504"/></w:tabs>'
+  const tabs =
+    '<w:tabs><w:tab w:val="center" w:pos="4252"/><w:tab w:val="right" w:pos="8504"/></w:tabs>'
   return `${XML_DECLARATION}<w:styles xmlns:w="${W_NS}">
 <w:docDefaults>
 <w:rPrDefault><w:rPr><w:rFonts w:ascii="${BODY_FONT}" w:hAnsi="${BODY_FONT}" w:eastAsia="${BODY_FONT}" w:cs="Times New Roman"/><w:sz w:val="${BODY_SIZE}"/><w:szCs w:val="${BODY_SIZE}"/><w:lang w:val="${spec.language}" w:eastAsia="en-US" w:bidi="ar-SA"/></w:rPr></w:rPrDefault>
@@ -215,7 +216,9 @@ function documentXml(spec: TemplateSpec): string {
 <w:p><w:r><w:br w:type="page"/></w:r></w:p>
 <w:p><w:r><w:t>{{body}}</w:t></w:r></w:p>`
     : ''
-  const headerReference = spec.headerText ? '<w:headerReference w:type="default" r:id="rIdHeader1"/>' : ''
+  const headerReference = spec.headerText
+    ? '<w:headerReference w:type="default" r:id="rIdHeader1"/>'
+    : ''
   // Without a cover, the first page is a normal page and needs no separate header/footer.
   const titlePage = spec.cover ? '<w:titlePg/>' : ''
   return `${XML_DECLARATION}<w:document xmlns:w="${W_NS}" xmlns:r="${R_NS}"><w:body>
@@ -295,17 +298,24 @@ function mappingJson(spec: TemplateSpec): string {
   return `${JSON.stringify(mapping, null, 2)}\n`
 }
 
+// Fixed entry dates make the generated files reproducible (byte-identical on every run).
+const ENTRY_DATE = new Date('2026-01-01T00:00:00Z')
+
+function add(zip: JSZip, name: string, data: string): void {
+  zip.file(name, data, { date: ENTRY_DATE })
+}
+
 async function buildPackage(spec: TemplateSpec, isTemplate: boolean): Promise<Uint8Array> {
   const zip = new JSZip()
-  zip.file('[Content_Types].xml', contentTypesXml(spec, isTemplate))
-  zip.file('_rels/.rels', rootRelsXml())
-  zip.file('docProps/core.xml', corePropertiesXml(spec))
-  zip.file('word/document.xml', documentXml(spec))
-  zip.file('word/_rels/document.xml.rels', documentRelsXml(spec))
-  zip.file('word/styles.xml', stylesXml(spec))
-  zip.file('word/settings.xml', settingsXml(spec))
-  if (spec.headerText) zip.file('word/header1.xml', headerXml(spec))
-  zip.file('word/footer1.xml', footerXml(spec))
+  add(zip, '[Content_Types].xml', contentTypesXml(spec, isTemplate))
+  add(zip, '_rels/.rels', rootRelsXml())
+  add(zip, 'docProps/core.xml', corePropertiesXml(spec))
+  add(zip, 'word/document.xml', documentXml(spec))
+  add(zip, 'word/_rels/document.xml.rels', documentRelsXml(spec))
+  add(zip, 'word/styles.xml', stylesXml(spec))
+  add(zip, 'word/settings.xml', settingsXml(spec))
+  if (spec.headerText) add(zip, 'word/header1.xml', headerXml(spec))
+  add(zip, 'word/footer1.xml', footerXml(spec))
   return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' })
 }
 
@@ -315,7 +325,8 @@ async function main(): Promise<void> {
   for (const spec of TEMPLATES) {
     writeFileSync(join(OUTPUT_DIR, `${spec.fileBase}.docx`), await buildPackage(spec, false))
     writeFileSync(join(OUTPUT_DIR, `${spec.fileBase}.marcdoc.json`), mappingJson(spec))
-    if (spec.cover) writeFileSync(join(OUTPUT_DIR, `${spec.fileBase}.dotx`), await buildPackage(spec, true))
+    if (spec.cover)
+      writeFileSync(join(OUTPUT_DIR, `${spec.fileBase}.dotx`), await buildPackage(spec, true))
   }
   console.log(`Templates written to ${OUTPUT_DIR}`)
 }

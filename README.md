@@ -46,13 +46,16 @@ npm install
 
 ## Usage
 
-| Command          | Description                       |
-| ---------------- | --------------------------------- |
-| `npm run dev`    | Start the app in development mode |
-| `npm run build`  | Type-check and build into `out/`  |
-| `npm test`       | Run unit tests                    |
-| `npm run lint`   | Lint the code                     |
-| `npm run format` | Format the code                   |
+| Command                                | Description                                                                                                  |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`                          | Start the app in development mode                                                                            |
+| `npm run build`                        | Type-check and build into `out/`                                                                             |
+| `npm test`                             | Run unit tests                                                                                               |
+| `npm run test:e2e`                     | Build and run end-to-end tests against the Electron app                                                      |
+| `npm run test:integration`             | Export the corpus to Word with every template and validate it (requires Pandoc; Docker for the Open XML SDK) |
+| `npm run validate:docx -- <file.docx>` | Validate a .docx with the Open XML SDK (requires Docker)                                                     |
+| `npm run lint`                         | Lint the code                                                                                                |
+| `npm run format`                       | Format the code                                                                                              |
 
 ## License
 
