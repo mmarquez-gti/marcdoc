@@ -1,4 +1,6 @@
 import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const ROOT = join(__dirname, '../..')
@@ -16,7 +18,13 @@ export async function launchApp(
     readonly executablePath?: string
   } = {},
 ): Promise<LaunchedApp> {
-  const env = { ...(process.env as Record<string, string>), ...options.env }
+  // English interface and a throwaway settings folder unless a test asks otherwise.
+  const env = {
+    ...(process.env as Record<string, string>),
+    MARCDOC_LOCALE: 'en',
+    MARCDOC_USER_DATA: mkdtempSync(join(tmpdir(), 'marcdoc-user-data-')),
+    ...options.env,
+  }
   const app = options.executablePath
     ? await electron.launch({ executablePath: options.executablePath, args: [], env })
     : await electron.launch({ args: [ROOT], cwd: ROOT, env })
