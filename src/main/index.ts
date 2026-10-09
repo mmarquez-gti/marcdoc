@@ -1,13 +1,19 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
-import { formatWindowTitle } from '../core'
+import { app, BrowserWindow, dialog, Menu, protocol, shell } from 'electron'
+import { ASSET_PROTOCOL, formatWindowTitle } from '../core'
 import { registerIpcHandlers, type WindowState } from './ipc'
 import { buildApplicationMenu } from './menu'
+import { AssetService } from './services/assetService'
 import { FileService } from './services/fileService'
 
 const DEFAULT_WINDOW_WIDTH = 1280
 const DEFAULT_WINDOW_HEIGHT = 800
 const DISCARD_BUTTON = 0
+
+// Must happen before the app is ready; `standard` gives the scheme normal URL parsing.
+protocol.registerSchemesAsPrivileged([
+  { scheme: ASSET_PROTOCOL, privileges: { standard: true, secure: true } },
+])
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -24,7 +30,10 @@ function createMainWindow(): BrowserWindow {
   })
 
   const state: WindowState = { isDirty: false }
-  registerIpcHandlers(window, new FileService(), state)
+  const files = new FileService()
+  const assets = new AssetService(() => files.currentPath)
+  protocol.handle(ASSET_PROTOCOL, (request) => assets.serve(request.url))
+  registerIpcHandlers(window, { files, assets }, state)
   Menu.setApplicationMenu(buildApplicationMenu(window))
 
   window.once('ready-to-show', () => window.show())

@@ -7,6 +7,7 @@ export const IpcChannel = {
   SaveDocumentAs: 'document:save-as',
   SetDirty: 'document:set-dirty',
   GetToolchainStatus: 'toolchain:status',
+  ImportAsset: 'asset:import',
   MenuCommand: 'menu:command',
 } as const
 
@@ -40,6 +41,11 @@ export interface MarcDocApi {
   /** Tells the main process whether closing the window would lose changes. */
   setDirty(isDirty: boolean): void
   getToolchainStatus(): Promise<ToolStatus[]>
+  /**
+   * Copies an image into the document's `assets/` folder; resolves to the path to use in
+   * Markdown. Fails if the document has never been saved.
+   */
+  importAsset(fileName: string, bytes: Uint8Array): Promise<string>
   /** Subscribes to menu commands; returns an unsubscribe function. */
   onMenuCommand(listener: (command: MenuCommand) => void): () => void
 }

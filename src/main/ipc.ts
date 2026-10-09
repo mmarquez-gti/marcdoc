@@ -1,5 +1,6 @@
 import { dialog, ipcMain, type BrowserWindow } from 'electron'
 import { IpcChannel } from '../shared/ipc'
+import type { AssetService } from './services/assetService'
 import type { FileService } from './services/fileService'
 import { detectToolchain } from './services/toolchainDetector'
 
@@ -12,9 +13,14 @@ export interface WindowState {
   isDirty: boolean
 }
 
+export interface Services {
+  readonly files: FileService
+  readonly assets: AssetService
+}
+
 export function registerIpcHandlers(
   window: BrowserWindow,
-  files: FileService,
+  { files, assets }: Services,
   state: WindowState,
 ): void {
   ipcMain.handle(IpcChannel.OpenDocument, async () => {
@@ -46,4 +52,8 @@ export function registerIpcHandlers(
   })
 
   ipcMain.handle(IpcChannel.GetToolchainStatus, () => detectToolchain())
+
+  ipcMain.handle(IpcChannel.ImportAsset, (_event, fileName: string, bytes: Uint8Array) =>
+    assets.import(fileName, bytes),
+  )
 }

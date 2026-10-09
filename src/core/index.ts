@@ -3,6 +3,7 @@ export { APP_NAME } from '../shared/app-info'
 export * from './document/state'
 export * from './toolchain/tools'
 export * from './toolchain/version'
+export * from './assets/paths'
 
 /** Formats the window title for a document, marking unsaved changes. */
 export function formatWindowTitle(fileName: string | null, isDirty: boolean): string {

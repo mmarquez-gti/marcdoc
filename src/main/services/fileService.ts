@@ -10,10 +10,17 @@ const MARKDOWN_EXTENSION = '.md'
  */
 export class FileService {
   private readonly allowedPaths = new Set<string>()
+  private current: string | null = null
+
+  /** Path of the document currently shown, used to resolve its relative images. */
+  get currentPath(): string | null {
+    return this.current
+  }
 
   async open(path: string): Promise<OpenedDocument> {
     const content = await readFile(path, 'utf8')
     this.allowedPaths.add(path)
+    this.current = path
     return { path, content }
   }
 
@@ -28,6 +35,7 @@ export class FileService {
     const target = extname(path) === '' ? `${path}${MARKDOWN_EXTENSION}` : path
     this.allowedPaths.add(target)
     await writeFile(target, content, 'utf8')
+    this.current = target
     return target
   }
 }
