@@ -250,9 +250,13 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | H3.4 | Citas `[@clave]` con BibTeX/CSL (`bibliography` y `csl` en el YAML, `--citeproc`); decisión sobre el lector de Pandoc en ADR-0003 | 2 sem | H2.x |
 | H3.5 | Referencias cruzadas a figuras y tablas. **La sintaxis requiere decisión del usuario** (GFM no tiene atributos) | 2 sem | H3.4 |
 
-### Fase 4 — Fidelidad avanzada (sin estimar)
+### Fase 4 — Fidelidad avanzada (≈ 6 semanas)
 
-Preservación del formato original del .md, i18n, otros sistemas operativos.
+| Hito | Tareas | Duración | Depende de |
+|---|---|---|---|
+| H4.1 | Preservación del formato: al editar en el WYSIWYG solo se reescriben los bloques modificados; el resto conserva su texto original y su separación | 2 sem | H1.6 |
+| H4.2 | i18n de la interfaz (inglés y español): menús, barras, diálogos y avisos; idioma del sistema con opción para cambiarlo | 2 sem | — |
+| H4.3 | Windows y macOS: código portable (rutas, `TEXINPUTS`, menús), objetivos de empaquetado. **Sin verificación en esos sistemas**: no hay equipos ni CI; queda documentado como riesgo | 2 sem | H3.3 |
 
 ### Calendario orientativo
 
