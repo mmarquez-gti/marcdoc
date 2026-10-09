@@ -38,16 +38,3 @@ export function parseMarkdown(markdown: string): Root {
 export function stringifyMarkdown(tree: Root): string {
   return serializer.stringify(tree)
 }
-
-/** Removes positions and serialization-only details so two trees can be compared by meaning. */
-export function normalizeTree(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(normalizeTree)
-  if (value === null || typeof value !== 'object') return value
-  const result: Record<string, unknown> = {}
-  for (const [key, child] of Object.entries(value)) {
-    if (key === 'position' || key === 'data') continue
-    if (child === undefined || child === null) continue
-    result[key] = normalizeTree(child)
-  }
-  return result
-}
