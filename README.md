@@ -19,6 +19,9 @@ LaTeX and Word (.docx), including export that follows the styles of a Word templ
   `assets/` folder next to it (save the document first).
 - Citations `[@key, p. 3]` formatted by Pandoc's citeproc from the `bibliography` (BibTeX,
   CSL JSON…) and `csl` style named in the front matter. See `docs/adr/0003-citations.md`.
+- Numbered figures and tables with cross-references in pandoc-crossref style:
+  `![Caption](plot.png){#fig:id}`, `Table: Caption {#tbl:id}` and `[@fig:id]`. See
+  `docs/adr/0004-cross-references.md`.
 - Export (`Ctrl+E`) to Word (.docx), PDF via LaTeX, PDF via HTML and LaTeX (.tex). PDF and
   .tex can use your own Pandoc LaTeX template; classes and packages next to it are found.
 - Word export follows a template (.docx or .dotx): its styles, cover page, headers and
