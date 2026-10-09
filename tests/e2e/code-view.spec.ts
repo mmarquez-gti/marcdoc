@@ -27,11 +27,9 @@ test('highlights Markdown syntax in the source view', async () => {
   await page.keyboard.type('# Heading\n\nSome **bold** text.\n')
 
   await expect(page.locator('.cm-line').first()).toHaveText('# Heading')
-  // The heading line carries a highlight class from the Markdown language.
-  await expect(page.locator('.cm-line').first().locator('span').first()).toHaveAttribute(
-    'class',
-    /ͼ/,
-  )
+  // The Markdown highlight style renders headings in bold.
+  const heading = page.locator('.cm-line').first().locator('span').first()
+  await expect(heading).toHaveCSS('font-weight', '700')
   await page.screenshot({ path: '.work/screens/h1.2-code-view.png' })
 })
 
