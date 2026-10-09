@@ -109,7 +109,28 @@ export function remapStyles(
   }
 }
 
-/** Copies from Pandoc's styles every style the merged parts use but the template lacks. */
+/**
+ * Style IDs Pandoc writes for Word's built-in styles, with their built-in names. Templates made
+ * in another Word language use other IDs for them (Spanish: `Tablanormal` for `TableNormal`),
+ * so they are found by name.
+ */
+const BUILT_IN_STYLE_NAMES: Readonly<Record<string, string>> = {
+  Normal: 'Normal',
+  DefaultParagraphFont: 'Default Paragraph Font',
+  TableNormal: 'Normal Table',
+  NoList: 'No List',
+}
+
+const INHERITANCE_REFERENCES = ['basedOn', 'next', 'link'] as const
+
+/**
+ * Copies from Pandoc's styles every style the merged parts use but the template lacks.
+ *
+ * Copied styles lose `w:default`: the template keeps its own default styles. A style they
+ * inherit from (`basedOn`, `next`, `link`) is taken from the template, by ID or by built-in
+ * name, or copied from Pandoc; if it exists nowhere, the reference is dropped, which leaves a
+ * valid style rather than failing the export.
+ */
 export function copyMissingStyles(
   parts: readonly Document[],
   sourceStyles: Document,
@@ -118,7 +139,18 @@ export function copyMissingStyles(
 ): string[] {
   const templateDefs = styleDefinitions(templateStyles)
   const sourceDefs = styleDefinitions(sourceStyles)
+  const templateIdsByName = new Map(
+    [...templateDefs].map(([id, style]) => [(styleName(style) ?? id).toLowerCase(), id]),
+  )
   const copied: string[] = []
+
+  /** ID to use in the template for a style a copied style inherits from, or null if none. */
+  const resolveInherited = (id: string): string | null => {
+    const mapped = styleIdMap.get(id) ?? id
+    if (templateDefs.has(mapped) || sourceDefs.has(mapped)) return mapped
+    const builtInName = BUILT_IN_STYLE_NAMES[mapped]
+    return (builtInName && templateIdsByName.get(builtInName.toLowerCase())) || null
+  }
 
   const pending = parts.flatMap((part) =>
     STYLE_REFERENCES.flatMap((localName) =>
@@ -133,13 +165,17 @@ export function copyMissingStyles(
       throw new Error(`Style "${id}" is used but defined neither in the template nor by Pandoc.`)
     }
     const copy = templateStyles.importNode(definition, true) as Element
+    copy.removeAttributeNS(W_NS, 'default')
     remapStyles(copy, styleIdMap)
-    for (const localName of ['basedOn', 'next', 'link']) {
+    for (const localName of INHERITANCE_REFERENCES) {
       for (const reference of elements(copy, W_NS, localName)) {
-        const original = wAttr(reference, 'val') ?? ''
-        const target = styleIdMap.get(original) ?? original
-        reference.setAttributeNS(W_NS, 'w:val', target)
-        pending.push(target)
+        const target = resolveInherited(wAttr(reference, 'val') ?? '')
+        if (target === null) {
+          copy.removeChild(reference)
+        } else {
+          reference.setAttributeNS(W_NS, 'w:val', target)
+          pending.push(target)
+        }
       }
     }
     templateStyles.documentElement!.appendChild(copy)

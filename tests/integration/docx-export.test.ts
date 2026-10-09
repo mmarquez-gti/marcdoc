@@ -259,6 +259,57 @@ describe('cross-references', () => {
   })
 })
 
+describe('templates made from a blank Word document', () => {
+  // A blank Word document only defines the styles it uses: no "Table Grid", and the default
+  // table style has a localized ID (Spanish Word: "Tablanormal" for "Normal Table").
+  async function blankSpanishTemplate(): Promise<string> {
+    const zip = await JSZip.loadAsync(
+      readFileSync(join(RESOURCES, 'templates/docx/sample-es.dotx')),
+    )
+    const styles = await zip.file('word/styles.xml')!.async('string')
+    zip.file(
+      'word/styles.xml',
+      styles.replace(/<w:style w:type="table" w:styleId="Tablaconcuadrcula">.*?<\/w:style>/s, ''),
+    )
+    const path = join(workDir, 'blank-es.dotx')
+    writeFileSync(path, await zip.generateAsync({ type: 'uint8array' }))
+    return path
+  }
+
+  it('exports tables when the template has no table style of its own', async () => {
+    const templatePath = await blankSpanishTemplate()
+    const outputPath = join(workDir, 'blank-template-tables.docx')
+    const exportDir = mkdtempSync(join(tmpdir(), 'marcdoc-docx-job-'))
+    try {
+      await exportDocx({
+        markdown: readFileSync(join(workDir, '03-tables.md'), 'utf8'),
+        invocation: {
+          resourcePath: workDir,
+          outputPath,
+          fallbackTitle: 'x',
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
+        templatePath,
+        resourcesDir: RESOURCES,
+        workDir: exportDir,
+      })
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true })
+    }
+    outputs.push(outputPath)
+    const bytes = readFileSync(outputPath)
+    const styles = await (await JSZip.loadAsync(bytes)).file('word/styles.xml')!.async('string')
+    // Pandoc's table style is copied, based on the template's own "Normal Table" style…
+    expect(styles).toMatch(
+      /w:styleId="Table">(?:(?!<\/w:style>).)*<w:basedOn w:val="Tablanormal"\/>/s,
+    )
+    // …and the template keeps a single default table style.
+    expect(styles.match(/<w:style w:type="table" w:default="1"/g)).toHaveLength(1)
+    const errors = (await lintDocx(bytes)).filter((issue) => issue.severity === 'error')
+    expect(errors).toEqual([])
+  })
+})
+
 describe('Open XML SDK validation (layer a)', () => {
   it('finds no schema errors in any exported document', ({ skip }) => {
     if (!dockerAvailable()) skip('Docker is not available to run the Open XML SDK validator')
