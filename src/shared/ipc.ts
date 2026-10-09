@@ -11,7 +11,9 @@ export const IpcChannel = {
   MenuCommand: 'menu:command',
 } as const
 
-export type MenuCommand = 'open' | 'save' | 'save-as'
+export type ViewMode = 'split' | 'wysiwyg' | 'source'
+
+export type MenuCommand = 'open' | 'save' | 'save-as' | `view-${ViewMode}`
 
 export interface OpenedDocument {
   readonly path: string

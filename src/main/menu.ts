@@ -23,7 +23,36 @@ export function buildApplicationMenu(window: BrowserWindow): Menu {
       ],
     },
     { role: 'editMenu' },
-    { role: 'viewMenu' },
+    {
+      label: 'View',
+      submenu: [
+        {
+          id: 'view-split',
+          label: 'Document and Source',
+          accelerator: 'CmdOrCtrl+1',
+          click: send('view-split'),
+        },
+        {
+          id: 'view-wysiwyg',
+          label: 'Document Only',
+          accelerator: 'CmdOrCtrl+2',
+          click: send('view-wysiwyg'),
+        },
+        {
+          id: 'view-source',
+          label: 'Source Only',
+          accelerator: 'CmdOrCtrl+3',
+          click: send('view-source'),
+        },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+        { role: 'toggleDevTools' },
+      ],
+    },
   ]
   return Menu.buildFromTemplate(template)
 }

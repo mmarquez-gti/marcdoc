@@ -7,6 +7,7 @@ import {
   isDirty,
   type DocumentState,
 } from '../../../core'
+import type { MenuCommand } from '../../../shared/ipc'
 
 export interface DocumentController {
   readonly state: DocumentState
@@ -91,8 +92,12 @@ export function useDocument(): DocumentController {
   useEffect(
     () =>
       window.marcdoc.onMenuCommand((command) => {
-        const actions = { open, save, 'save-as': saveAs }
-        void actions[command]()
+        const actions: Partial<Record<MenuCommand, () => Promise<void>>> = {
+          open,
+          save,
+          'save-as': saveAs,
+        }
+        void actions[command]?.()
       }),
     [open, save, saveAs],
   )

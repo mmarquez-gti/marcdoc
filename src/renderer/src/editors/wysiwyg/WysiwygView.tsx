@@ -4,7 +4,7 @@ import { history } from 'prosemirror-history'
 import { Slice } from 'prosemirror-model'
 import { EditorState, type Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import { createIncrementalSerializer, markdownToDoc } from '../../../../core/markdown'
 import { diffTopLevelBlocks } from '../../../../core/sync/blockDiff'
 import { FormatToolbar } from './FormatToolbar'
@@ -36,7 +36,20 @@ function applyExternalMarkdown(view: EditorView, markdown: string): void {
   )
 }
 
+/** Position at the top of the visible area: a Markdown block index plus how far into it (0..1). */
+export interface BlockPosition {
+  readonly index: number
+  readonly fraction: number
+}
+
+export interface WysiwygViewHandle {
+  readonly scroller: HTMLElement | null
+  topBlock(): BlockPosition | null
+  scrollToBlock(position: BlockPosition): void
+}
+
 interface WysiwygViewProps {
+  readonly ref?: Ref<WysiwygViewHandle>
   /** Changes when a different document is loaded; resets undo history. */
   readonly documentKey: string
   readonly value: string
@@ -60,7 +73,7 @@ function createState(markdown: string): EditorState {
   })
 }
 
-export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygViewProps) {
+export function WysiwygView({ documentKey, value, onChange, onError, ref }: WysiwygViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
@@ -172,10 +185,61 @@ export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygVi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
+  useImperativeHandle(
+    ref,
+    (): WysiwygViewHandle => ({
+      get scroller() {
+        return hostRef.current
+      },
+      topBlock() {
+        const view = viewRef.current
+        const scroller = hostRef.current
+        if (!view || !scroller) return null
+        const blocks = markdownBlockElements(view)
+        const top = scroller.getBoundingClientRect().top
+        let index = blocks.findIndex((element) => element.getBoundingClientRect().bottom > top)
+        if (index === -1) index = blocks.length - 1
+        const element = blocks[index]
+        if (!element) return null
+        const rect = element.getBoundingClientRect()
+        const fraction = rect.height > 0 ? (top - rect.top) / rect.height : 0
+        return { index, fraction: Math.min(1, Math.max(0, fraction)) }
+      },
+      scrollToBlock({ index, fraction }) {
+        const view = viewRef.current
+        const scroller = hostRef.current
+        if (!view || !scroller) return
+        const blocks = markdownBlockElements(view)
+        const element = blocks[Math.min(index, blocks.length - 1)]
+        if (!element) return
+        const offset =
+          element.getBoundingClientRect().top -
+          scroller.getBoundingClientRect().top +
+          scroller.scrollTop
+        scroller.scrollTop = offset + fraction * element.getBoundingClientRect().height
+      },
+    }),
+    [],
+  )
+
   return (
     <div className="wysiwyg-view">
       {editorState && toolbarView && <FormatToolbar view={toolbarView} state={editorState} />}
       <div className="wysiwyg-page" ref={hostRef} />
     </div>
   )
+}
+
+/**
+ * DOM elements of the top-level blocks that exist in the Markdown, in order. Empty paragraphs
+ * are skipped because they are not written to Markdown (see blockLineRanges).
+ */
+function markdownBlockElements(view: EditorView): HTMLElement[] {
+  const elements: HTMLElement[] = []
+  view.state.doc.forEach((block, offset) => {
+    if (block.type.name === 'paragraph' && block.childCount === 0) return
+    const dom = view.nodeDOM(offset)
+    if (dom instanceof HTMLElement) elements.push(dom)
+  })
+  return elements
 }

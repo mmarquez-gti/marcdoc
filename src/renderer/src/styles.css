@@ -337,3 +337,19 @@ body,
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+.view-switch button {
+  border: 1px solid var(--border);
+  background: none;
+  padding: 0.1rem 0.6rem;
+  cursor: pointer;
+}
+
+.view-switch button.active {
+  background: color-mix(in srgb, Highlight 25%, transparent);
+}
+
+.editor-area.view-wysiwyg .code-view,
+.editor-area.view-source .wysiwyg-view {
+  display: none;
+}
