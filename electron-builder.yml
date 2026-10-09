@@ -46,3 +46,19 @@ fileAssociations:
   - ext: md
     name: Markdown document
     mimeType: text/markdown
+
+# Windows and macOS (PLAN.md H4.3): configured but not verified on those systems. macOS
+# packages must be built on macOS; they are unsigned, so Gatekeeper asks for confirmation.
+win:
+  target:
+    - nsis
+    - zip
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  target:
+    - dmg
+  category: public.app-category.productivity
+  icon: build/icon.png

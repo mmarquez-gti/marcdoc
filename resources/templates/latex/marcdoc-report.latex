@@ -7,9 +7,10 @@
 % amssymb (task list boxes) must be loaded before unicode-math, as in Pandoc's template.
 \usepackage{amsmath,amssymb}
 \usepackage{unicode-math}
-\setmainfont{Carlito}
-\setsansfont{Carlito}
-\setmonofont{DejaVu Sans Mono}[Scale=0.85]
+% Carlito (Linux) or Calibri (Windows, macOS with Office); otherwise LaTeX's Latin Modern.
+\IfFontExistsTF{Carlito}{\setmainfont{Carlito}\setsansfont{Carlito}}{%
+  \IfFontExistsTF{Calibri}{\setmainfont{Calibri}\setsansfont{Calibri}}{}}
+\IfFontExistsTF{DejaVu Sans Mono}{\setmonofont{DejaVu Sans Mono}[Scale=0.85]}{}
 $if(lang)$
 \usepackage{babel}
 $endif$
