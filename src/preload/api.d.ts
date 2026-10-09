@@ -1,7 +1,4 @@
-/** API exposed by the preload script on `window.marcdoc`. */
-export interface MarcDocApi {
-  readonly platform: string
-}
+import type { MarcDocApi } from '../shared/ipc'
 
 declare global {
   interface Window {

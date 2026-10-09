@@ -1,5 +1,8 @@
 // Pure domain logic: must not import Electron, React or Node I/O modules.
 export { APP_NAME } from '../shared/app-info'
+export * from './document/state'
+export * from './toolchain/tools'
+export * from './toolchain/version'
 
 /** Formats the window title for a document, marking unsaved changes. */
 export function formatWindowTitle(fileName: string | null, isDirty: boolean): string {

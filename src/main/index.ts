@@ -1,9 +1,13 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
 import { formatWindowTitle } from '../core'
+import { registerIpcHandlers, type WindowState } from './ipc'
+import { buildApplicationMenu } from './menu'
+import { FileService } from './services/fileService'
 
 const DEFAULT_WINDOW_WIDTH = 1280
 const DEFAULT_WINDOW_HEIGHT = 800
+const DISCARD_BUTTON = 0
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -19,7 +23,24 @@ function createMainWindow(): BrowserWindow {
     },
   })
 
+  const state: WindowState = { isDirty: false }
+  registerIpcHandlers(window, new FileService(), state)
+  Menu.setApplicationMenu(buildApplicationMenu(window))
+
   window.once('ready-to-show', () => window.show())
+
+  window.on('close', (event) => {
+    if (!state.isDirty) return
+    const choice = dialog.showMessageBoxSync(window, {
+      type: 'warning',
+      buttons: ['Discard changes', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      message: 'This document has unsaved changes.',
+      detail: 'If you close the window, your changes will be lost.',
+    })
+    if (choice !== DISCARD_BUTTON) event.preventDefault()
+  })
 
   // Links must never navigate the app window; open them in the system browser instead.
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -42,11 +63,8 @@ function createMainWindow(): BrowserWindow {
 
 void app.whenReady().then(() => {
   createMainWindow()
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
-  })
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  app.quit()
 })
