@@ -69,6 +69,40 @@ export function printableHtmlArgs(
   ]
 }
 
+/**
+ * .docx built with a template as reference doc. `stripTitleFilterPath` leaves the title block
+ * out, for templates whose cover page shows it.
+ */
+export function docxArgs(
+  { resourcePath, outputPath }: PandocInvocation,
+  referenceDocPath: string,
+  stripTitleFilterPath: string | null,
+): string[] {
+  return [
+    `--from=${PANDOC_INPUT_FORMAT}`,
+    '--to=docx',
+    `--reference-doc=${referenceDocPath}`,
+    ...(stripTitleFilterPath ? [`--lua-filter=${stripTitleFilterPath}`] : []),
+    `--resource-path=${resourcePath}`,
+    `--output=${outputPath}`,
+  ]
+}
+
+/**
+ * Prints the front matter as JSON through a template containing `$meta-json$`. `--quiet`
+ * because the plain-text body (unused) would warn about math it cannot render.
+ */
+export function metadataArgs(metaTemplatePath: string): string[] {
+  return [
+    `--from=${PANDOC_INPUT_FORMAT}`,
+    '--to=plain',
+    '--quiet',
+    `--template=${metaTemplatePath}`,
+  ]
+}
+
+export const DEFAULT_REFERENCE_DOCX_ARGS = ['--print-default-data-file', 'reference.docx']
+
 const LATEX_VARIABLES = [
   `--variable=geometry:a4paper,margin=${PAGE_MARGIN_CM}cm`,
   '--variable=colorlinks:true',

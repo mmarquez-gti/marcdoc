@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   defaultOutputName,
+  docxArgs,
   latexArgs,
   pdfViaLatexArgs,
   printableHtmlArgs,
@@ -34,6 +35,15 @@ describe('Pandoc arguments', () => {
         '--metadata=pagetitle:report',
       ]),
     )
+  })
+})
+
+describe('docxArgs', () => {
+  it('adds the title-stripping filter only when given', () => {
+    expect(docxArgs(invocation, '/ref.docx', '/strip.lua')).toContain('--lua-filter=/strip.lua')
+    expect(
+      docxArgs(invocation, '/ref.docx', null).some((arg) => arg.startsWith('--lua-filter')),
+    ).toBe(false)
   })
 })
 

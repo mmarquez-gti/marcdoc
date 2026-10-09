@@ -23,6 +23,8 @@ export interface ExportRequest {
   readonly format: ExportFormat
   readonly markdown: string
   readonly documentPath: string | null
+  /** Word template for .docx export; null or absent uses MarcDoc's default template. */
+  readonly templatePath?: string | null
 }
 
 export interface ExportResult {

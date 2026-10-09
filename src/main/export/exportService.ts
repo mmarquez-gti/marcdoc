@@ -1,6 +1,6 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import {
   latexArgs,
   pdfViaLatexArgs,
@@ -9,6 +9,7 @@ import {
   type PandocInvocation,
 } from '../../core'
 import type { ExportResult } from '../../shared/ipc'
+import { exportDocx } from './docxExport'
 import { printHtmlToPdf } from './htmlToPdf'
 import { runPandoc } from './pandocRunner'
 
@@ -21,6 +22,8 @@ export interface ExportJob {
   /** Path of the Markdown file, used to resolve relative images; null if never saved. */
   readonly documentPath: string | null
   readonly outputPath: string
+  /** Word template for .docx export; null uses MarcDoc's default template. */
+  readonly templatePath?: string | null
 }
 
 export class ExportService {
@@ -30,7 +33,8 @@ export class ExportService {
     const workDir = await mkdtemp(join(tmpdir(), 'marcdoc-export-'))
     try {
       const invocation: PandocInvocation = {
-        resourcePath: job.documentPath ? dirname(job.documentPath) : workDir,
+        // Pandoc runs in workDir, so a relative path would resolve against the wrong directory.
+        resourcePath: job.documentPath ? resolve(dirname(job.documentPath)) : workDir,
         outputPath: job.outputPath,
         fallbackTitle: job.documentPath ? basename(job.documentPath) : 'Untitled',
       }
@@ -70,7 +74,13 @@ export class ExportService {
         return warnings
       }
       case 'docx':
-        throw new Error('Word export is not available yet.')
+        return exportDocx({
+          markdown: job.markdown,
+          invocation,
+          templatePath: job.templatePath ?? null,
+          resourcesDir: this.resourcesDir,
+          workDir,
+        })
     }
   }
 }
