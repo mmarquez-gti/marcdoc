@@ -12,6 +12,7 @@ LaTeX and Word (.docx), including export that follows the styles of a Word templ
 - External tools used for export (detected at runtime, not bundled):
   - [Pandoc](https://pandoc.org/) >= 3.1
   - TeX Live with `lualatex`
+- For development only: Docker, used to run the Open XML SDK validator in `tools/ooxml-validator`
 
 ## Installation
 

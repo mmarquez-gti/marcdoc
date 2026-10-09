@@ -120,7 +120,7 @@ Funciona en tres etapas:
    - Si es `.dotx`, se cambia el tipo de contenido de `word/document.xml` (de `template.main+xml` a `document.main+xml`).
    - Se extrae el catálogo de estilos: `w:styleId`, nombre visible, tipo y estilo base.
    - Se genera una **reference-doc** de Pandoc derivada de la plantilla.
-2. **Conversión con Pandoc** usando esa reference-doc y un **filtro Lua** que asigna `custom-style` según el mapeo, para los elementos que Pandoc no asigna por sí solo.
+2. **Conversión con Pandoc** usando esa reference-doc. *Actualizado por ADR-0002:* no se usa un filtro Lua para asignar estilos; la reasignación se hace en el postprocesado. Un filtro Lua solo elimina el bloque de título de Pandoc.
 3. **Postprocesado** (en `core/docx`, TypeScript puro):
    - **Fusión:** el paquete base es la *plantilla*, no la salida de Pandoc. El cuerpo generado se inserta en el punto marcado (un párrafo `{{body}}` o un control de contenido etiquetado). La plantilla conserva portada, encabezados y pies, secciones (`w:sectPr`), tema, fuentes y configuración.
    - **Reasignación de estilos por `w:styleId`:** sustituye los estilos propios de Pandoc (`BodyText`, `FirstParagraph`, `Compact`, `SourceCode`, tabla `Table`…) por los que indique el mapeo. Así funcionan igual las plantillas en español (`Ttulo1`) y en inglés (`Heading1`).

@@ -27,7 +27,7 @@ Criterios fijados en el plan:
   - **sin pérdida:** el mdast de `md₁` es igual al del original, sin contar posiciones;
   - **idéntico:** `md₁ = md` byte a byte (informativo).
 - Las dos opciones usan las mismas reglas de serialización (`spikes/wysiwyg/shared/markdown.ts`).
-- Para reproducirlo: `npx vitest run --config spikes/wysiwyg/vitest.config.ts`.
+- Para reproducirlo: `npx vitest run --config spikes/vitest.config.ts`.
 
 ## Resultados
 
