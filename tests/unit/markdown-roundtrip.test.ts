@@ -57,14 +57,6 @@ describe('docToMarkdown', () => {
 })
 
 describe('markdownToDoc', () => {
-  it('records the source line of every top-level block', () => {
-    const lines: unknown[] = []
-    markdownToDoc('# A\n\npara\n\n- item\n').forEach((block) =>
-      lines.push(block.attrs['sourceLine']),
-    )
-    expect(lines).toEqual([1, 3, 5])
-  })
-
   it.each([
     ['an image reference', '![alt][logo]\n\n[logo]: logo.png\n'],
     ['an HTML block', '<div>\n  kept\n</div>\n'],

@@ -3,9 +3,6 @@
 // does not model are kept verbatim in `raw_block` / `raw_inline`.
 import { Schema, type DOMOutputSpec, type Node as PMNode } from 'prosemirror-model'
 
-// Every top-level block keeps the line it came from, so views can map scroll positions.
-const sourceLine = { sourceLine: { default: null } }
-
 const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const
 
 function stringAttr(dom: HTMLElement, name: string): string | null {
@@ -20,7 +17,6 @@ export const schema = new Schema({
     paragraph: {
       group: 'block',
       content: 'inline*',
-      attrs: { ...sourceLine },
       parseDOM: [{ tag: 'p' }],
       toDOM: (): DOMOutputSpec => ['p', 0],
     },
@@ -28,7 +24,7 @@ export const schema = new Schema({
       group: 'block',
       content: 'inline*',
       defining: true,
-      attrs: { level: { default: 1 }, ...sourceLine },
+      attrs: { level: { default: 1 } },
       parseDOM: HEADING_LEVELS.map((level) => ({ tag: `h${level}`, attrs: { level } })),
       toDOM: (node): DOMOutputSpec => [`h${node.attrs['level']}`, 0],
     },
@@ -36,13 +32,11 @@ export const schema = new Schema({
       group: 'block',
       content: 'block+',
       defining: true,
-      attrs: { ...sourceLine },
       parseDOM: [{ tag: 'blockquote' }],
       toDOM: (): DOMOutputSpec => ['blockquote', 0],
     },
     horizontal_rule: {
       group: 'block',
-      attrs: { ...sourceLine },
       parseDOM: [{ tag: 'hr' }],
       toDOM: (): DOMOutputSpec => ['hr'],
     },
@@ -52,7 +46,7 @@ export const schema = new Schema({
       marks: '',
       code: true,
       defining: true,
-      attrs: { lang: { default: null }, meta: { default: null }, ...sourceLine },
+      attrs: { lang: { default: null }, meta: { default: null } },
       parseDOM: [
         {
           tag: 'pre',
@@ -73,7 +67,6 @@ export const schema = new Schema({
         ordered: { default: false },
         start: { default: null },
         spread: { default: false },
-        ...sourceLine,
       },
       parseDOM: [
         { tag: 'ul', attrs: { ordered: false } },
@@ -115,7 +108,7 @@ export const schema = new Schema({
       content: 'table_row+',
       isolating: true,
       tableRole: 'table',
-      attrs: { align: { default: [] }, ...sourceLine },
+      attrs: { align: { default: [] } },
       parseDOM: [{ tag: 'table' }],
       toDOM: (): DOMOutputSpec => ['table', ['tbody', 0]],
     },
@@ -158,7 +151,6 @@ export const schema = new Schema({
       content: 'text*',
       marks: '',
       code: true,
-      attrs: { ...sourceLine },
       parseDOM: [{ tag: 'pre.math-block', preserveWhitespace: 'full' }],
       toDOM: (): DOMOutputSpec => ['pre', { class: 'math-block' }, ['code', 0]],
     },
@@ -167,14 +159,13 @@ export const schema = new Schema({
       content: 'text*',
       marks: '',
       code: true,
-      attrs: { ...sourceLine },
       parseDOM: [{ tag: 'pre.frontmatter', preserveWhitespace: 'full' }],
       toDOM: (): DOMOutputSpec => ['pre', { class: 'frontmatter' }, ['code', 0]],
     },
     footnote_definition: {
       group: 'block',
       content: 'block+',
-      attrs: { identifier: {}, label: { default: null }, ...sourceLine },
+      attrs: { identifier: {}, label: { default: null } },
       parseDOM: [
         {
           tag: 'div.footnote-definition',
@@ -203,7 +194,6 @@ export const schema = new Schema({
         label: { default: null },
         url: {},
         title: { default: null },
-        ...sourceLine,
       },
       parseDOM: [
         {
@@ -233,7 +223,7 @@ export const schema = new Schema({
       group: 'block',
       atom: true,
       selectable: true,
-      attrs: { value: {}, ...sourceLine },
+      attrs: { value: {} },
       parseDOM: [
         {
           tag: 'pre.raw-block',

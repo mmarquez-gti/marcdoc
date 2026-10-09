@@ -36,36 +36,27 @@ class MdastConverter {
   }
 
   private blockToPM(node: RootContent): PMNode[] {
-    const sourceLine = lineOf(node)
     switch (node.type) {
       case 'paragraph':
-        return [schema.node('paragraph', { sourceLine }, this.inlinesToPM(node.children, []))]
+        return [schema.node('paragraph', null, this.inlinesToPM(node.children, []))]
       case 'heading':
-        return [
-          schema.node(
-            'heading',
-            { level: node.depth, sourceLine },
-            this.inlinesToPM(node.children, []),
-          ),
-        ]
+        return [schema.node('heading', { level: node.depth }, this.inlinesToPM(node.children, []))]
       case 'blockquote':
-        return [
-          schema.node('blockquote', { sourceLine }, this.blocksOrEmptyParagraph(node.children)),
-        ]
+        return [schema.node('blockquote', null, this.blocksOrEmptyParagraph(node.children))]
       case 'thematicBreak':
-        return [schema.node('horizontal_rule', { sourceLine })]
+        return [schema.node('horizontal_rule', null)]
       case 'code':
         return [
           schema.node(
             'code_block',
-            { lang: node.lang ?? null, meta: node.meta ?? null, sourceLine },
+            { lang: node.lang ?? null, meta: node.meta ?? null },
             text(node.value),
           ),
         ]
       case 'math':
-        return [schema.node('math_block', { sourceLine }, text(node.value))]
+        return [schema.node('math_block', null, text(node.value))]
       case 'yaml':
-        return [schema.node('frontmatter', { sourceLine }, text(node.value))]
+        return [schema.node('frontmatter', null, text(node.value))]
       case 'list':
         return [
           schema.node(
@@ -74,7 +65,6 @@ class MdastConverter {
               ordered: node.ordered ?? false,
               start: node.start ?? null,
               spread: node.spread ?? false,
-              sourceLine,
             },
             node.children.map((item) =>
               schema.node(
@@ -89,7 +79,7 @@ class MdastConverter {
         return [
           schema.node(
             'table',
-            { align: node.align ?? [], sourceLine },
+            { align: node.align ?? [] },
             node.children.map((row) =>
               schema.node(
                 'table_row',
@@ -105,7 +95,7 @@ class MdastConverter {
         return [
           schema.node(
             'footnote_definition',
-            { identifier: node.identifier, label: node.label ?? null, sourceLine },
+            { identifier: node.identifier, label: node.label ?? null },
             this.blocksOrEmptyParagraph(node.children),
           ),
         ]
@@ -116,13 +106,12 @@ class MdastConverter {
             label: node.label ?? null,
             url: node.url,
             title: node.title ?? null,
-            sourceLine,
           }),
         ]
       case 'html':
-        return [schema.node('raw_block', { value: node.value, sourceLine })]
+        return [schema.node('raw_block', { value: node.value })]
       default:
-        return [schema.node('raw_block', { value: this.sourceOf(node), sourceLine })]
+        return [schema.node('raw_block', { value: this.sourceOf(node) })]
     }
   }
 
@@ -187,10 +176,6 @@ class MdastConverter {
         return [schema.node('raw_inline', { value: this.sourceOf(node) }, undefined, marks)]
     }
   }
-}
-
-function lineOf(node: Nodes): number | null {
-  return node.position?.start.line ?? null
 }
 
 function text(value: string, marks: readonly Mark[] = []): PMNode[] {

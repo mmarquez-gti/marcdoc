@@ -1,10 +1,12 @@
 import { dropCursor } from 'prosemirror-dropcursor'
 import { gapCursor } from 'prosemirror-gapcursor'
 import { history } from 'prosemirror-history'
+import { Slice } from 'prosemirror-model'
 import { EditorState, type Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { useEffect, useRef, useState } from 'react'
-import { docToMarkdown, markdownToDoc } from '../../../../core/markdown'
+import { createIncrementalSerializer, markdownToDoc } from '../../../../core/markdown'
+import { diffTopLevelBlocks } from '../../../../core/sync/blockDiff'
 import { FormatToolbar } from './FormatToolbar'
 import { buildInputRules } from './inputRules'
 import { buildKeymaps } from './keymap'
@@ -15,6 +17,24 @@ import { ListItemView } from './taskList'
 
 /** Marks transactions that load content from outside the editor; they are not reported back. */
 const EXTERNAL_UPDATE = 'marcdoc-external-update'
+
+/** Source edits are applied after a short pause in typing, not on every keystroke. */
+const SOURCE_SYNC_DELAY_MS = 150
+
+/**
+ * Applies new Markdown from the source view by replacing only the top-level blocks that changed,
+ * so the other blocks keep their DOM, rendering and any selection inside them.
+ */
+function applyExternalMarkdown(view: EditorView, markdown: string): void {
+  const change = diffTopLevelBlocks(view.state.doc, markdownToDoc(markdown))
+  if (!change) return
+  view.dispatch(
+    view.state.tr
+      .replace(change.from, change.to, new Slice(change.content, 0, 0))
+      .setMeta(EXTERNAL_UPDATE, true)
+      .setMeta('addToHistory', false),
+  )
+}
 
 interface WysiwygViewProps {
   /** Changes when a different document is loaded; resets undo history. */
@@ -47,6 +67,9 @@ export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygVi
   const onErrorRef = useRef(onError)
   // Markdown this view last produced or loaded; equal incoming values need no reload.
   const lastMarkdownRef = useRef(value)
+  // Source edit waiting for the debounce; flushed before the user interacts with this view.
+  const pendingRef = useRef<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorState, setEditorState] = useState<EditorState | null>(null)
   // Kept in state as well, because the toolbar renders from it.
   const [toolbarView, setToolbarView] = useState<EditorView | null>(null)
@@ -56,7 +79,24 @@ export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygVi
     onErrorRef.current = onError
   }, [onChange, onError])
 
+  function cancelPending(): void {
+    if (timerRef.current !== null) clearTimeout(timerRef.current)
+    timerRef.current = null
+    pendingRef.current = null
+  }
+
+  function flushPending(): false {
+    const markdown = pendingRef.current
+    const view = viewRef.current
+    cancelPending()
+    if (markdown !== null && view) applyExternalMarkdown(view, markdown)
+    // Never consume the event: ProseMirror must still handle it.
+    return false
+  }
+
   useEffect(() => {
+    // Re-serializes only the blocks that changed since the previous keystroke.
+    const serialize = createIncrementalSerializer()
     const view = new EditorView(hostRef.current!, {
       state: createState(value),
       attributes: { 'aria-label': 'Document', class: 'wysiwyg-content', spellcheck: 'true' },
@@ -65,6 +105,12 @@ export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygVi
         image: (node) => new ImageView(node),
         math_inline: (node) => new MathInlineView(node),
         math_block: (node) => new MathBlockView(node),
+      },
+      handleDOMEvents: {
+        // A pending source edit must land before any edit here is built on the old document.
+        focus: () => flushPending(),
+        mousedown: () => flushPending(),
+        keydown: () => flushPending(),
       },
       handlePaste(pasteView, event) {
         const files = imageFiles(event.clipboardData)
@@ -93,7 +139,7 @@ export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygVi
         view.updateState(next)
         setEditorState(next)
         if (transaction.docChanged && !transaction.getMeta(EXTERNAL_UPDATE)) {
-          const markdown = docToMarkdown(next.doc)
+          const markdown = serialize(next.doc)
           lastMarkdownRef.current = markdown
           onChangeRef.current(markdown)
         }
@@ -104,6 +150,7 @@ export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygVi
     setEditorState(view.state)
     setToolbarView(view)
     return () => {
+      cancelPending()
       view.destroy()
       viewRef.current = null
       setToolbarView(null)
@@ -113,15 +160,16 @@ export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygVi
   }, [documentKey])
 
   useEffect(() => {
-    const view = viewRef.current
-    if (!view || value === lastMarkdownRef.current) return
+    if (value === lastMarkdownRef.current) {
+      cancelPending()
+      return
+    }
     lastMarkdownRef.current = value
-    const doc = markdownToDoc(value)
-    const transaction = view.state.tr
-      .replaceWith(0, view.state.doc.content.size, doc.content)
-      .setMeta(EXTERNAL_UPDATE, true)
-      .setMeta('addToHistory', false)
-    view.dispatch(transaction)
+    pendingRef.current = value
+    if (timerRef.current !== null) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(flushPending, SOURCE_SYNC_DELAY_MS)
+    // flushPending and cancelPending only touch refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
   return (

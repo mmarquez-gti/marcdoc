@@ -5,6 +5,7 @@ import { docToMdast } from './toMdast'
 
 export { schema } from './schema'
 export { STRINGIFY_OPTIONS } from './remark'
+export { createIncrementalSerializer } from './incremental'
 
 /** Parses Markdown into an editor document. Every block records its source line. */
 export function markdownToDoc(markdown: string): PMNode {
