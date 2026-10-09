@@ -8,6 +8,7 @@ import {
 import type { MarkType } from 'prosemirror-model'
 import type { Plugin } from 'prosemirror-state'
 import { schema } from '../../../../core/markdown'
+import { taskInputRule } from './taskList'
 
 const { nodes, marks } = schema
 
@@ -53,6 +54,7 @@ export function buildInputRules(): Plugin {
         (match, node) => node.childCount + (node.attrs['start'] ?? 1) === Number(match[1]),
       ),
       horizontalRule,
+      taskInputRule,
       markInputRule(/\*\*([^*\s](?:[^*]*[^*\s])?)\*\*$/, marks.strong),
       markInputRule(/(?:^|[^*\w])\*([^*\s](?:[^*]*[^*\s])?)\*$/, marks.emphasis),
       markInputRule(/`([^`]+)`$/, marks.code),

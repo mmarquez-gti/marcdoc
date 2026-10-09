@@ -8,6 +8,8 @@ import { docToMarkdown, markdownToDoc } from '../../../../core/markdown'
 import { FormatToolbar } from './FormatToolbar'
 import { buildInputRules } from './inputRules'
 import { buildKeymaps } from './keymap'
+import { buildTablePlugins } from './tables'
+import { ListItemView } from './taskList'
 
 /** Marks transactions that load content from outside the editor; they are not reported back. */
 const EXTERNAL_UPDATE = 'marcdoc-external-update'
@@ -22,7 +24,15 @@ interface WysiwygViewProps {
 function createState(markdown: string): EditorState {
   return EditorState.create({
     doc: markdownToDoc(markdown),
-    plugins: [buildInputRules(), ...buildKeymaps(), history(), dropCursor(), gapCursor()],
+    plugins: [
+      buildInputRules(),
+      // Table keys (Tab, Enter) take precedence over list and base keys inside tables.
+      ...buildTablePlugins(),
+      ...buildKeymaps(),
+      history(),
+      dropCursor(),
+      gapCursor(),
+    ],
   })
 }
 
@@ -44,6 +54,9 @@ export function WysiwygView({ documentKey, value, onChange }: WysiwygViewProps) 
     const view = new EditorView(hostRef.current!, {
       state: createState(value),
       attributes: { 'aria-label': 'Document', class: 'wysiwyg-content', spellcheck: 'true' },
+      nodeViews: {
+        list_item: (node, nodeView, getPos) => new ListItemView(node, nodeView, getPos),
+      },
       dispatchTransaction(transaction: Transaction) {
         const next = view.state.apply(transaction)
         view.updateState(next)

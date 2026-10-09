@@ -108,24 +108,50 @@ export const schema = new Schema({
           ? ['li', 0]
           : ['li', { class: 'task-item', 'data-checked': String(node.attrs['checked']) }, 0],
     },
+    // Table roles let prosemirror-tables edit these nodes. GFM tables have no merged cells and
+    // only inline content per cell; spans exist because prosemirror-tables requires them.
     table: {
       group: 'block',
       content: 'table_row+',
       isolating: true,
+      tableRole: 'table',
       attrs: { align: { default: [] }, ...sourceLine },
       parseDOM: [{ tag: 'table' }],
       toDOM: (): DOMOutputSpec => ['table', ['tbody', 0]],
     },
     table_row: {
       content: 'table_cell+',
+      tableRole: 'row',
       parseDOM: [{ tag: 'tr' }],
       toDOM: (): DOMOutputSpec => ['tr', 0],
     },
     table_cell: {
       content: 'inline*',
       isolating: true,
-      parseDOM: [{ tag: 'td' }, { tag: 'th' }],
-      toDOM: (): DOMOutputSpec => ['td', 0],
+      tableRole: 'cell',
+      attrs: { colspan: { default: 1 }, rowspan: { default: 1 }, colwidth: { default: null } },
+      parseDOM: [
+        {
+          tag: 'td',
+          getAttrs: (dom) => ({
+            colspan: Number(stringAttr(dom, 'colspan') ?? 1),
+            rowspan: Number(stringAttr(dom, 'rowspan') ?? 1),
+          }),
+        },
+        {
+          tag: 'th',
+          getAttrs: (dom) => ({
+            colspan: Number(stringAttr(dom, 'colspan') ?? 1),
+            rowspan: Number(stringAttr(dom, 'rowspan') ?? 1),
+          }),
+        },
+      ],
+      toDOM: (node): DOMOutputSpec => {
+        const attrs: Record<string, string> = {}
+        if (node.attrs['colspan'] !== 1) attrs['colspan'] = String(node.attrs['colspan'])
+        if (node.attrs['rowspan'] !== 1) attrs['rowspan'] = String(node.attrs['rowspan'])
+        return ['td', attrs, 0]
+      },
     },
     math_block: {
       group: 'block',

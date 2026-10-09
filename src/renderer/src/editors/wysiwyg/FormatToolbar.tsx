@@ -1,5 +1,13 @@
 import type { Command, EditorState } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
+import {
+  addColumnAfter,
+  addRowAfter,
+  deleteColumn,
+  deleteRow,
+  deleteTable,
+  isInTable,
+} from 'prosemirror-tables'
 import { useState, type FormEvent } from 'react'
 import { schema } from '../../../../core/markdown'
 import {
@@ -12,10 +20,13 @@ import {
   setParagraph,
   toggleBlockquote,
   toggleCode,
+  toggleDelete,
   toggleEmphasis,
   toggleList,
   toggleStrong,
 } from './commands'
+import { alignColumn, currentColumnAlign, insertTable, type ColumnAlign } from './tables'
+import { isTaskList, toggleTaskList } from './taskList'
 
 const BLOCK_STYLES = [
   { value: 'paragraph', label: 'Normal text', command: setParagraph },
@@ -91,6 +102,13 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
         {'</>'}
       </ToolButton>
       <ToolButton
+        label="Strikethrough (Ctrl+Shift+X)"
+        active={isMarkActive(state, schema.marks.delete)}
+        onClick={() => run(toggleDelete)}
+      >
+        <s>S</s>
+      </ToolButton>
+      <ToolButton
         label="Bulleted list (Ctrl+Shift+8)"
         active={listKind === 'bullet'}
         onClick={() => run(toggleList(false))}
@@ -103,6 +121,9 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
         onClick={() => run(toggleList(true))}
       >
         1. List
+      </ToolButton>
+      <ToolButton label="Task list" active={isTaskList(state)} onClick={() => run(toggleTaskList)}>
+        ☑ Tasks
       </ToolButton>
       <ToolButton
         label="Quote"
@@ -133,7 +154,53 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
           <button type="submit">Apply</button>
         </form>
       )}
+      {isInTable(state) ? (
+        <TableControls state={state} run={run} />
+      ) : (
+        <ToolButton label="Insert table" active={false} onClick={() => run(insertTable)}>
+          ▦ Table
+        </ToolButton>
+      )}
     </div>
+  )
+}
+
+const COLUMN_ALIGNMENTS: readonly { align: ColumnAlign; label: string; icon: string }[] = [
+  { align: 'left', label: 'Align column left', icon: '⇤' },
+  { align: 'center', label: 'Center column', icon: '↔' },
+  { align: 'right', label: 'Align column right', icon: '⇥' },
+]
+
+function TableControls({ state, run }: { state: EditorState; run: (command: Command) => void }) {
+  const align = currentColumnAlign(state)
+  return (
+    <span className="table-controls" role="group" aria-label="Table">
+      <ToolButton label="Add row below" active={false} onClick={() => run(addRowAfter)}>
+        +Row
+      </ToolButton>
+      <ToolButton label="Add column right" active={false} onClick={() => run(addColumnAfter)}>
+        +Col
+      </ToolButton>
+      <ToolButton label="Delete row" active={false} onClick={() => run(deleteRow)}>
+        −Row
+      </ToolButton>
+      <ToolButton label="Delete column" active={false} onClick={() => run(deleteColumn)}>
+        −Col
+      </ToolButton>
+      {COLUMN_ALIGNMENTS.map((option) => (
+        <ToolButton
+          key={option.align}
+          label={option.label}
+          active={align === option.align}
+          onClick={() => run(alignColumn(align === option.align ? null : option.align))}
+        >
+          {option.icon}
+        </ToolButton>
+      ))}
+      <ToolButton label="Delete table" active={false} onClick={() => run(deleteTable)}>
+        ✕ Table
+      </ToolButton>
+    </span>
   )
 }
 

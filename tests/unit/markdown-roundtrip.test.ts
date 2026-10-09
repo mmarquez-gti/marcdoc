@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { describe, expect, it } from 'vitest'
-import { docToMarkdown, markdownToDoc } from '../../src/core/markdown'
+import { docToMarkdown, markdownToDoc, schema } from '../../src/core/markdown'
 import { parseMarkdown } from '../../src/core/markdown/remark'
 
 const CORPUS_DIR = join(__dirname, '../fixtures/markdown')
@@ -41,6 +41,18 @@ describe.each(corpus)('round trip of %s', (file) => {
   it('is idempotent after the first normalization', () => {
     const once = roundTrip(original)
     expect(roundTrip(once)).toBe(once)
+  })
+})
+
+describe('docToMarkdown', () => {
+  it('drops empty paragraphs instead of writing blank lines', () => {
+    const { nodes } = schema
+    const doc = nodes.doc.create(null, [
+      nodes.paragraph.create(null, schema.text('text')),
+      nodes.paragraph.create(),
+      nodes.paragraph.create(),
+    ])
+    expect(docToMarkdown(doc)).toBe('text\n')
   })
 })
 

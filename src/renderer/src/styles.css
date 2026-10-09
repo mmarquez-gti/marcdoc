@@ -227,15 +227,56 @@ body,
 
 .wysiwyg-content .task-item {
   list-style: none;
+  display: flex;
+  gap: 0.4rem;
+  margin-left: -1.3rem;
 }
 
-.wysiwyg-content .task-item::before {
-  content: '☐ ';
-  margin-left: -1.2rem;
+.wysiwyg-content .task-item > input {
+  margin-top: 0.35rem;
 }
 
-.wysiwyg-content .task-item[data-checked='true']::before {
-  content: '☑ ';
+.wysiwyg-content .list-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.wysiwyg-content .list-item-content > p:first-child {
+  margin-top: 0;
+}
+
+.wysiwyg-content table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  table-layout: fixed;
+}
+
+.wysiwyg-content td {
+  min-width: 4rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  vertical-align: top;
+  position: relative;
+}
+
+.wysiwyg-content td.table-header-cell {
+  font-weight: 600;
+  background: color-mix(in srgb, #1f4e79 12%, transparent);
+}
+
+.wysiwyg-content td.selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, Highlight 25%, transparent);
+  pointer-events: none;
+}
+
+.table-controls {
+  display: inline-flex;
+  gap: 0.15rem;
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--border);
 }
 
 .ProseMirror-selectednode {

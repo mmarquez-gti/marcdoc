@@ -1,5 +1,6 @@
 // ProseMirror document -> mdast.
 import type {
+  AlignType,
   BlockContent,
   DefinitionContent,
   PhrasingContent,
@@ -11,7 +12,17 @@ import type {
 import type { Mark, Node as PMNode } from 'prosemirror-model'
 
 export function docToMdast(doc: PMNode): Root {
-  return { type: 'root', children: childrenOf(doc).map(blockToMdast) }
+  return { type: 'root', children: blocksToMdast(doc) }
+}
+
+/**
+ * Converts the blocks of a container. Empty paragraphs (e.g. left after pressing Enter twice)
+ * have no Markdown representation and would only add stray blank lines, so they are dropped.
+ */
+function blocksToMdast(container: PMNode): RootContent[] {
+  return childrenOf(container)
+    .filter((block) => !(block.type.name === 'paragraph' && block.childCount === 0))
+    .map(blockToMdast)
 }
 
 function childrenOf(node: PMNode): PMNode[] {
@@ -32,7 +43,7 @@ function blockToMdast(node: PMNode): MdastBlock {
     case 'blockquote':
       return {
         type: 'blockquote',
-        children: childrenOf(node).map(blockToMdast) as (BlockContent | DefinitionContent)[],
+        children: blocksToMdast(node) as (BlockContent | DefinitionContent)[],
       }
     case 'horizontal_rule':
       return { type: 'thematicBreak' }
@@ -52,27 +63,17 @@ function blockToMdast(node: PMNode): MdastBlock {
           type: 'listItem',
           checked: item.attrs['checked'],
           spread: item.attrs['spread'],
-          children: childrenOf(item).map(blockToMdast) as (BlockContent | DefinitionContent)[],
+          children: blocksToMdast(item) as (BlockContent | DefinitionContent)[],
         })),
       }
     case 'table':
-      return {
-        type: 'table',
-        align: attrs['align'],
-        children: childrenOf(node).map((row): TableRow => ({
-          type: 'tableRow',
-          children: childrenOf(row).map((cell): TableCell => ({
-            type: 'tableCell',
-            children: inlinesToMdast(cell),
-          })),
-        })),
-      }
+      return tableToMdast(node)
     case 'footnote_definition':
       return {
         type: 'footnoteDefinition',
         identifier: attrs['identifier'],
         label: attrs['label'],
-        children: childrenOf(node).map(blockToMdast) as (BlockContent | DefinitionContent)[],
+        children: blocksToMdast(node) as (BlockContent | DefinitionContent)[],
       }
     case 'link_definition':
       return {
@@ -86,6 +87,30 @@ function blockToMdast(node: PMNode): MdastBlock {
       return { type: 'html', value: attrs['value'] }
     default:
       throw new Error(`Unsupported ProseMirror block: ${node.type.name}`)
+  }
+}
+
+/**
+ * GFM tables have one alignment per column and no merged cells: alignments are fitted to the
+ * column count, and a cell spanning several columns becomes that many cells (content in the first).
+ */
+function tableToMdast(node: PMNode): RootContent {
+  const rows = childrenOf(node).map((row): TableRow => ({
+    type: 'tableRow',
+    children: childrenOf(row).flatMap((cell): TableCell[] => [
+      { type: 'tableCell', children: inlinesToMdast(cell) },
+      ...Array.from({ length: Number(cell.attrs['colspan'] ?? 1) - 1 }, (): TableCell => ({
+        type: 'tableCell',
+        children: [],
+      })),
+    ]),
+  }))
+  const columnCount = Math.max(0, ...rows.map((row) => row.children.length))
+  const align = node.attrs['align'] as readonly (AlignType | undefined)[]
+  return {
+    type: 'table',
+    align: Array.from({ length: columnCount }, (_, index) => align[index] ?? null),
+    children: rows,
   }
 }
 
