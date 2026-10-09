@@ -68,3 +68,10 @@ Motivos:
 
 - `npm audit` informa de 3 vulnerabilidades de severidad baja en `katex`, que es una dependencia transitiva de `remark-math` a través de `micromark-extension-math`. Solo afecta a la salida HTML de esa extensión, que no usamos. La corrección automática bajaría `remark-math` a la versión 3. Se revisará cuando haya una versión corregida.
 - La normalización convierte las URL sueltas (`https://…`) en autoenlaces explícitos (`<https://…>`). El significado se conserva, pero es un cambio visible para el usuario.
+
+## Revisión (09/10/2026, hito H1.6)
+
+- **Se elimina el atributo `sourceLine` del esquema.** Al insertar o borrar líneas, su valor cambia en todos los bloques siguientes. ProseMirror considera distintos esos nodos y los vuelve a dibujar, lo que anula el diff mínimo por bloques de la sincronización. La correspondencia bloque ↔ líneas se calcula a partir del texto Markdown cuando hace falta (`src/core/sync/blockLines.ts`). Se apoya en que cada bloque de primer nivel del editor corresponde a un nodo mdast de primer nivel, salvo los párrafos vacíos.
+- **Rendimiento medido** con un documento de unas 11 000 palabras (unas 25–30 páginas):
+  - Serializar todo el documento costaba ~53 ms por pulsación en el WYSIWYG. Con la caché por bloque (`createIncrementalSerializer`) cuesta ~0,5 ms.
+  - Parsear el Markdown cuesta ~150 ms y se ejecuta con _debounce_ (150 ms) al editar en la vista de código. En documentos grandes puede notarse una pausa al dejar de teclear. Mejora prevista si llega a molestar: parsear en un Web Worker o de forma incremental por bloques.
