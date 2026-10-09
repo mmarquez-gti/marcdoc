@@ -316,3 +316,9 @@ Preservación del formato original del .md, i18n, otros sistemas operativos.
 | 09/10/2026 | H2.6 | Diálogo de exportación, errores legibles, prueba de aceptación del MVP |
 | 09/10/2026 | **Fase 2 completada (pendiente de verificación manual)** | Criterio 1 del MVP: cumplido. Criterio 2: cumplido para .docx y PDF vía HTML; PDF vía LaTeX pendiente de instalar paquetes. Criterio 3: pendiente de la revisión en Word Online |
 | 09/10/2026 | Verificación PDF vía LaTeX | Instalados `texlive-luatex` y `texlive-latex-extra`: PDF vía LuaLaTeX verificado (e2e 38/38). Criterio 2 del MVP cumplido. Queda el criterio 3 (Word Online) |
+| 09/10/2026 | H3.1 | Editor visual del mapeo de estilos (solo plantillas elegidas por el usuario; validado contra la plantilla) |
+| 09/10/2026 | H3.2 | Plantillas LaTeX de Pandoc propias e incluida `marcdoc-report.latex`; `.cls`/`.sty` junto a la plantilla vía `TEXINPUTS` |
+| 09/10/2026 | H3.3 | AppImage y .deb con `electron-builder`; prueba de humo sobre el ejecutable empaquetado. `npm audit`: 8 avisos moderados en `sprintf-js` (herramienta de build, sin versión corregida) |
+| 09/10/2026 | H3.4 | Citas `[@clave]` con citeproc (ADR-0003); nodo `citation` en el editor, sin escapes |
+| 09/10/2026 | H3.5 | Referencias cruzadas estilo pandoc-crossref (ADR-0004); marcadores válidos para Word |
+| 09/10/2026 | **Fase 3 completada** | 178 tests unitarios, 59 de integración, 48 e2e y la prueba del paquete en verde. Pendiente: revisión en Word Online (criterio 3 del MVP) |
