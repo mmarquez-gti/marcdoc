@@ -97,5 +97,7 @@ test('keeps both views consistent across alternating edits', async () => {
 
   await expect
     .poll(() => sourceText(page))
-    .toBe('# Title\n\nIntro paragraph.\n\n- one\n- two\n- three\n')
+    // The source got two blank lines before the list (the cursor was on the empty last line
+    // when "\n\n" was typed); the unedited paragraph keeps that spacing (PLAN.md H4.1).
+    .toBe('# Title\n\nIntro paragraph.\n\n\n- one\n- two\n- three\n')
 })
