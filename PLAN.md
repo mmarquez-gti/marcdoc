@@ -309,3 +309,4 @@ Preservación del formato original del .md, i18n, otros sistemas operativos.
 | 09/10/2026 | H2.5 | Plantillas es/en/default reproducibles; comparación visual con LibreOffice (capa c); lista de comprobación de Word Online (capa d) |
 | 09/10/2026 | H2.6 | Diálogo de exportación, errores legibles, prueba de aceptación del MVP |
 | 09/10/2026 | **Fase 2 completada (pendiente de verificación manual)** | Criterio 1 del MVP: cumplido. Criterio 2: cumplido para .docx y PDF vía HTML; PDF vía LaTeX pendiente de instalar paquetes. Criterio 3: pendiente de la revisión en Word Online |
+| 09/10/2026 | Verificación PDF vía LaTeX | Instalados `texlive-luatex` y `texlive-latex-extra`: PDF vía LuaLaTeX verificado (e2e 38/38). Criterio 2 del MVP cumplido. Queda el criterio 3 (Word Online) |
