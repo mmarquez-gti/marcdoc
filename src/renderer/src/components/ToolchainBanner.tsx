@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { MessageKey, Translate } from '../../../shared/i18n'
 import type { ToolStatus } from '../../../shared/ipc'
 import { useT } from '../i18n'
+import { Banner } from './Banner'
 
 /** Warns about missing or outdated external tools; editing still works without them. */
 export function ToolchainBanner() {
@@ -22,16 +23,13 @@ export function ToolchainBanner() {
   if (dismissed || problems.length === 0) return null
 
   return (
-    <div className="banner banner-warning" role="status">
+    <Banner kind="warning" onDismiss={() => setDismissed(true)}>
       <ul>
         {problems.map((tool) => (
           <li key={tool.id}>{describeProblem(tool, t)}</li>
         ))}
       </ul>
-      <button type="button" onClick={() => setDismissed(true)} aria-label={t('common.dismiss')}>
-        ×
-      </button>
-    </div>
+    </Banner>
   )
 }
 

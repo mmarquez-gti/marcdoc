@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { EXPORT_FORMATS, type ExportFormat } from '../../../core/export/formats'
 import type { LatexTemplateInfo, TemplateInfo, ToolStatus } from '../../../shared/ipc'
+import { FolderOpen, Share, SlidersHorizontal } from 'lucide-react'
 import { MappingEditor } from './MappingEditor'
 import { useT } from '../i18n'
 
@@ -157,11 +158,13 @@ export function ExportDialog({
                       </option>
                     ))}
                   </select>
-                  <button type="button" onClick={() => void chooseTemplate()}>
+                  <button type="button" className="btn" onClick={() => void chooseTemplate()}>
+                    <FolderOpen size={14} aria-hidden />
                     {t('export.choose')}
                   </button>
                   {template && (
-                    <button type="button" onClick={() => setEditingMapping(true)}>
+                    <button type="button" className="btn" onClick={() => setEditingMapping(true)}>
+                      <SlidersHorizontal size={14} aria-hidden />
                       {t('export.styleMapping')}
                     </button>
                   )}
@@ -194,7 +197,8 @@ export function ExportDialog({
                       </option>
                     ))}
                   </select>
-                  <button type="button" onClick={() => void chooseLatexTemplate()}>
+                  <button type="button" className="btn" onClick={() => void chooseLatexTemplate()}>
+                    <FolderOpen size={14} aria-hidden />
                     {t('export.choose')}
                   </button>
                 </div>
@@ -209,15 +213,16 @@ export function ExportDialog({
             )}
 
             <div className="dialog-actions">
-              <button type="button" onClick={onClose}>
+              <button type="button" className="btn" onClick={onClose}>
                 {t('common.cancel')}
               </button>
               <button
                 type="button"
-                className="primary"
+                className="btn btn-primary"
                 disabled={blocked !== null}
                 onClick={() => onExport(format)}
               >
+                <Share size={14} aria-hidden />
                 {t('export.export')}
               </button>
             </div>

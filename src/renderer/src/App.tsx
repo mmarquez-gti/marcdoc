@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fileNameOf } from '../../core'
 import type { ViewMode } from '../../shared/ipc'
+import { Banner } from './components/Banner'
 import { ExportDialog } from './components/ExportDialog'
 import { ExportStatusBanner } from './components/ExportStatusBanner'
 import { ToolchainBanner } from './components/ToolchainBanner'
@@ -10,14 +11,13 @@ import { WysiwygView, type WysiwygViewHandle } from './editors/wysiwyg/WysiwygVi
 import { useDocument } from './hooks/useDocument'
 import { useExport } from './hooks/useExport'
 import { useScrollSync } from './hooks/useScrollSync'
-import { useT } from './i18n'
 
 export function App() {
-  const t = useT()
   const document = useDocument()
   const [viewMode, setViewMode] = useState<ViewMode>('split')
   const codeRef = useRef<CodeViewHandle>(null)
   const wysiwygRef = useRef<WysiwygViewHandle>(null)
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null)
   const documentKey = String(document.state.generation)
   const exporter = useExport(document.state)
 
@@ -32,7 +32,7 @@ export function App() {
   )
 
   return (
-    <div className="app">
+    <div className={`app view-${viewMode}`}>
       <Toolbar
         fileName={fileNameOf(document.state.path)}
         isDirty={document.isDirty}
@@ -44,6 +44,8 @@ export function App() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
       />
+      {/* The document view renders its formatting toolbar here (hidden in source-only view). */}
+      <div className="format-slot" ref={setToolbarSlot} />
       <ToolchainBanner />
       <ExportStatusBanner status={exporter.status} onDismiss={exporter.dismiss} />
       {exporter.dialogOpen && (
@@ -58,17 +60,15 @@ export function App() {
         />
       )}
       {document.error && (
-        <div className="banner banner-error" role="alert">
-          <span>{document.error}</span>
-          <button type="button" onClick={document.clearError} aria-label={t('common.dismiss')}>
-            ×
-          </button>
-        </div>
+        <Banner kind="error" onDismiss={document.clearError}>
+          {document.error}
+        </Banner>
       )}
       {/* Hidden views stay mounted so both remain in sync and keep their undo history. */}
       <main className={`editor-area view-${viewMode}`}>
         <WysiwygView
           ref={wysiwygRef}
+          toolbarSlot={toolbarSlot}
           documentKey={documentKey}
           value={document.state.content}
           onChange={document.edit}

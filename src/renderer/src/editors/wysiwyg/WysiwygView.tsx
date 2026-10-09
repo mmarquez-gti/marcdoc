@@ -7,6 +7,7 @@ import { EditorView } from 'prosemirror-view'
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import { BlockSources, createIncrementalSerializer, markdownToDoc } from '../../../../core/markdown'
 import { diffTopLevelBlocks } from '../../../../core/sync/blockDiff'
+import { createPortal } from 'react-dom'
 import { FormatToolbar } from './FormatToolbar'
 import { buildInputRules } from './inputRules'
 import { buildKeymaps } from './keymap'
@@ -80,6 +81,8 @@ interface WysiwygViewProps {
   readonly onChange: (value: string) => void
   /** Reports problems the user must see, e.g. an image pasted into an unsaved document. */
   readonly onError: (message: string) => void
+  /** Where the formatting toolbar is shown: a full-width strip under the top bar. */
+  readonly toolbarSlot: HTMLElement | null
 }
 
 function createState(markdown: string, sources: BlockSources): EditorState {
@@ -97,7 +100,14 @@ function createState(markdown: string, sources: BlockSources): EditorState {
   })
 }
 
-export function WysiwygView({ documentKey, value, onChange, onError, ref }: WysiwygViewProps) {
+export function WysiwygView({
+  documentKey,
+  value,
+  onChange,
+  onError,
+  toolbarSlot,
+  ref,
+}: WysiwygViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
@@ -254,7 +264,10 @@ export function WysiwygView({ documentKey, value, onChange, onError, ref }: Wysi
 
   return (
     <div className="wysiwyg-view">
-      {editorState && toolbarView && <FormatToolbar view={toolbarView} state={editorState} />}
+      {editorState &&
+        toolbarView &&
+        toolbarSlot &&
+        createPortal(<FormatToolbar view={toolbarView} state={editorState} />, toolbarSlot)}
       <div className="wysiwyg-page" ref={hostRef} />
     </div>
   )

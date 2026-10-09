@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   findMappingProblems,
@@ -155,15 +156,16 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
       )}
 
       <div className="dialog-actions">
-        <button type="button" onClick={onClose}>
+        <button type="button" className="btn" onClick={onClose}>
           {t('common.back')}
         </button>
         <button
           type="button"
-          className="primary"
+          className="btn btn-primary"
           disabled={!details.editable || problems.length > 0 || draft.bodyPlaceholder.trim() === ''}
           onClick={() => void save()}
         >
+          <Check size={14} aria-hidden />
           {t('mapping.save')}
         </button>
       </div>
