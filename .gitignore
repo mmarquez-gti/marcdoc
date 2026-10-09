@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+out/
+dist/
+coverage/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credentials.*
+secrets.*
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+
+# TypeScript incremental cache
+*.tsbuildinfo
