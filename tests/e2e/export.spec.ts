@@ -122,3 +122,20 @@ test('shows Pandoc errors when an export fails', async () => {
   await expect(alert).toContainText('simulated failure')
   expect(existsSync(output)).toBe(false)
 })
+
+test('exports a Word document with the default template', async () => {
+  const { app, page } = await openCorpusFile('01-basic.md')
+  const output = join(workDir, 'basic.docx')
+  await stubSaveDialog(app, output)
+  await clickMenuItem(app, 'export-docx')
+
+  await expect(page.getByRole('status').filter({ hasText: 'Exported to' })).toBeVisible({
+    timeout: 30_000,
+  })
+  // A .docx is a ZIP package: check the signature and that the body text is there.
+  const bytes = readFileSync(output)
+  expect(bytes.subarray(0, 2).toString()).toBe('PK')
+  expect(
+    execFileSync('unzip', ['-p', output, 'word/document.xml'], { encoding: 'utf8' }),
+  ).toContain('blockquote')
+})
