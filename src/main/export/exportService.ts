@@ -1,6 +1,6 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, dirname, join, resolve } from 'node:path'
+import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import {
   latexArgs,
   pdfViaLatexArgs,
@@ -60,7 +60,13 @@ export class ExportService {
     const latexTemplate = job.latexTemplatePath ?? null
     // Classes and packages shipped next to a LaTeX template must be found by LuaLaTeX.
     const latexEnv = latexTemplate
-      ? { TEXINPUTS: texInputsFor(dirname(resolve(latexTemplate)), process.env['TEXINPUTS']) }
+      ? {
+          TEXINPUTS: texInputsFor(
+            dirname(resolve(latexTemplate)),
+            process.env['TEXINPUTS'],
+            delimiter,
+          ),
+        }
       : undefined
     switch (job.format) {
       case 'latex':

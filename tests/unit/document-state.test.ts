@@ -51,6 +51,10 @@ describe('fileNameOf', () => {
     expect(fileNameOf('/home/user/notes.md')).toBe('notes.md')
   })
 
+  it('handles Windows paths', () => {
+    expect(fileNameOf('C:\\Users\\ana\\notes.md')).toBe('notes.md')
+  })
+
   it('returns null for unsaved documents', () => {
     expect(fileNameOf(null)).toBeNull()
   })

@@ -1,3 +1,4 @@
+import { fileNameOf } from '../document/state'
 // Export formats and the Pandoc arguments for each. Pure: callers run Pandoc.
 
 export type ExportFormat = 'pdf-latex' | 'pdf-html' | 'latex' | 'docx'
@@ -85,10 +86,15 @@ export function isPandocTemplate(content: string): boolean {
 
 /**
  * TEXINPUTS that lets LaTeX find classes and packages stored next to a template (`//` searches
- * subdirectories; the trailing `:` keeps the standard TeX directories).
+ * subdirectories; the empty entry after the delimiter keeps the standard TeX directories). The
+ * delimiter is `;` on Windows and `:` elsewhere (Node's path.delimiter).
  */
-export function texInputsFor(templateDir: string, inherited: string | undefined): string {
-  return `${templateDir}//:${inherited ?? ''}`
+export function texInputsFor(
+  templateDir: string,
+  inherited: string | undefined,
+  delimiter: ':' | ';',
+): string {
+  return `${templateDir}//${delimiter}${inherited ?? ''}`
 }
 
 /** Self-contained HTML (images and CSS inlined, MathML for formulas) ready to print to PDF. */
@@ -151,7 +157,7 @@ const LATEX_VARIABLES = [
 
 /** Default output file name: the document name with the format's extension. */
 export function defaultOutputName(documentPath: string | null, format: ExportFormat): string {
-  const fileName = documentPath?.slice(documentPath.lastIndexOf('/') + 1) ?? 'Untitled.md'
+  const fileName = fileNameOf(documentPath) ?? 'Untitled.md'
   const base = fileName.replace(/\.(md|markdown)$/i, '')
   return `${base}.${EXPORT_FORMATS[format].extension}`
 }

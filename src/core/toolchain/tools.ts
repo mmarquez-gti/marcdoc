@@ -1,4 +1,5 @@
 import type { ToolStatus } from '../../shared/ipc'
+import { fileNameOf } from '../document/state'
 import { isSupportedVersion, parseVersion } from './version'
 
 export interface ToolDefinition {
@@ -12,9 +13,11 @@ export interface ToolDefinition {
   readonly purpose: string
   /** TeX files (found with kpsewhich) that must exist for the tool to work, e.g. `soul.sty`. */
   readonly requiredTeXFiles?: readonly string[]
-  /** What to install when required files are missing. */
-  readonly installHint?: string
+  /** What to install when required files are missing, per platform (Node's process.platform). */
+  readonly installHints?: Readonly<Partial<Record<Platform, string>>>
 }
+
+export type Platform = 'linux' | 'darwin' | 'win32'
 
 export const TOOLS: readonly ToolDefinition[] = [
   {
@@ -44,7 +47,11 @@ export const TOOLS: readonly ToolDefinition[] = [
       'soul.sty',
       'framed.sty',
     ],
-    installHint: 'sudo apt install texlive-luatex texlive-latex-extra',
+    installHints: {
+      linux: 'sudo apt install texlive-luatex texlive-latex-extra',
+      darwin: 'MacTeX (https://tug.org/mactex/), which includes every package',
+      win32: 'MiKTeX (https://miktex.org/), letting it install missing packages on the fly',
+    },
   },
 ]
 
@@ -56,9 +63,10 @@ export function toolStatus(
   tool: ToolDefinition,
   versionOutput: string | null,
   foundTeXPaths: readonly string[] = [],
+  platform: string = 'linux',
 ): ToolStatus {
   const version = versionOutput === null ? null : parseVersion(versionOutput, tool.versionMarker)
-  const foundNames = new Set(foundTeXPaths.map((path) => path.slice(path.lastIndexOf('/') + 1)))
+  const foundNames = new Set(foundTeXPaths.map((path) => fileNameOf(path) ?? path))
   const missingFiles = (tool.requiredTeXFiles ?? []).filter((file) => !foundNames.has(file))
   return {
     id: tool.id,
@@ -67,7 +75,7 @@ export function toolStatus(
     version,
     minimumVersion: tool.minimumVersion,
     missingFiles,
-    installHint: tool.installHint ?? null,
+    installHint: tool.installHints?.[platform as Platform] ?? null,
     supported:
       versionOutput !== null &&
       isSupportedVersion(version, tool.minimumVersion) &&

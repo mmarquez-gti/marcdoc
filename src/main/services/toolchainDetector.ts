@@ -14,10 +14,15 @@ export async function detectToolchain(): Promise<ToolStatus[]> {
         const { stdout } = await execFileAsync(tool.command, [...tool.versionArgs], {
           timeout: VERSION_TIMEOUT_MS,
         })
-        return toolStatus(tool, stdout, await findTeXFiles(tool.requiredTeXFiles ?? []))
+        return toolStatus(
+          tool,
+          stdout,
+          await findTeXFiles(tool.requiredTeXFiles ?? []),
+          process.platform,
+        )
       } catch {
         // Not installed or not runnable: reported to the user as missing, not as an error.
-        return toolStatus(tool, null)
+        return toolStatus(tool, null, [], process.platform)
       }
     }),
   )
@@ -28,10 +33,10 @@ async function findTeXFiles(files: readonly string[]): Promise<string[]> {
   if (files.length === 0) return []
   try {
     const { stdout } = await execFileAsync('kpsewhich', [...files], { timeout: VERSION_TIMEOUT_MS })
-    return stdout.split('\n').filter(Boolean)
+    return stdout.split(/\r?\n/).filter(Boolean)
   } catch (error) {
     // kpsewhich exits with status 1 when some files are missing but still prints the others.
     const stdout = (error as { stdout?: string }).stdout ?? ''
-    return stdout.split('\n').filter(Boolean)
+    return stdout.split(/\r?\n/).filter(Boolean)
   }
 }

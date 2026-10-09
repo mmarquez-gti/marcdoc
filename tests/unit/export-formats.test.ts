@@ -54,6 +54,10 @@ describe('defaultOutputName', () => {
     expect(defaultOutputName('/a/report.md', 'docx')).toBe('report.docx')
   })
 
+  it('handles Windows paths', () => {
+    expect(defaultOutputName('C:\\Users\\ana\\informe.md', 'pdf-html')).toBe('informe.pdf')
+  })
+
   it('names unsaved documents "Untitled"', () => {
     expect(defaultOutputName(null, 'pdf-latex')).toBe('Untitled.pdf')
   })
@@ -72,8 +76,9 @@ describe('LaTeX templates', () => {
   })
 
   it('searches the template folder first and keeps the standard TeX paths', () => {
-    expect(texInputsFor('/t', undefined)).toBe('/t//:')
-    expect(texInputsFor('/t', '/x:')).toBe('/t//:/x:')
+    expect(texInputsFor('/t', undefined, ':')).toBe('/t//:')
+    expect(texInputsFor('/t', '/x:', ':')).toBe('/t//:/x:')
+    expect(texInputsFor('C:\\t', undefined, ';')).toBe('C:\\t//;')
   })
 })
 

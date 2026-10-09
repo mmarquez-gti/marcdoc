@@ -43,7 +43,8 @@ export function isDirty(state: DocumentState): boolean {
   return state.content !== state.savedContent
 }
 
+/** Last segment of a path, with `/` or `\` separators (Windows paths use either). */
 export function fileNameOf(path: string | null): string | null {
   if (path === null) return null
-  return path.slice(path.lastIndexOf('/') + 1)
+  return path.slice(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1)
 }

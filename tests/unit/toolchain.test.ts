@@ -69,3 +69,22 @@ describe('toolStatus with required TeX files', () => {
     })
   })
 })
+
+describe('install hints', () => {
+  it.each([
+    ['linux', 'texlive-luatex'],
+    ['darwin', 'MacTeX'],
+    ['win32', 'MiKTeX'],
+  ])('suggests the TeX distribution for %s', (platform, expected) => {
+    expect(
+      toolStatus(lualatex, 'This is LuaHBTeX, Version 1.17.0', [], platform).installHint,
+    ).toContain(expected)
+  })
+
+  it('finds required TeX files from Windows paths', () => {
+    const paths = lualatex.requiredTeXFiles!.map((file) => `C:\\texmf\\${file}`)
+    expect(toolStatus(lualatex, 'This is LuaHBTeX, Version 1.17.0', paths, 'win32').supported).toBe(
+      true,
+    )
+  })
+})
