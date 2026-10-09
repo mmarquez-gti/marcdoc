@@ -13,6 +13,8 @@
     "src/preload/**/*",
     "src/core/**/*",
     "src/shared/**/*",
-    "tests/unit/**/*"
+    "tests/unit/**/*",
+    "tests/e2e/**/*",
+    "playwright.config.ts"
   ]
 }
