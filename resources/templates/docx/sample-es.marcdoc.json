@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "bodyPlaceholder": "{{body}}",
+  "styles": {
+    "paragraph": "Normal",
+    "compactParagraph": "Prrafodelista",
+    "heading1": "Ttulo1",
+    "heading2": "Ttulo2",
+    "heading3": "Ttulo3",
+    "blockquote": "Cita",
+    "codeBlock": "Cdigo",
+    "inlineCode": "CdigoCar",
+    "table": "Tablaconcuadrcula",
+    "caption": "Descripcin",
+    "footnoteText": "Textonotapie",
+    "footnoteReference": "Refdenotaalpie",
+    "hyperlink": "Hipervnculo"
+  },
+  "cover": {
+    "title": "title",
+    "author": "author",
+    "date": "date"
+  }
+}

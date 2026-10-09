@@ -24,3 +24,6 @@ secrets.*
 
 # TypeScript incremental cache
 *.tsbuildinfo
+
+# Local scratch output (renders, generated documents)
+.work/
