@@ -1,0 +1,48 @@
+# Linux packages (PLAN.md H3.3). Pandoc and LaTeX are external dependencies, not bundled.
+appId: es.uvigo.gti.marcdoc
+productName: MarcDoc
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+# Templates, the print stylesheet and the Lua filter are read by Pandoc and LaTeX as plain files,
+# so they live outside app.asar (see src/main/export/resources.ts).
+extraResources:
+  - from: resources
+    to: resources
+    filter:
+      - '**/*'
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+  icon: build/icon.png
+  mimeTypes:
+    - text/markdown
+  synopsis: Markdown editor with a word-processor view and Word template export
+  packageCategory: editors
+deb:
+  # Setting depends replaces electron-builder's defaults, so they are listed again (the *t64
+  # packages of Ubuntu 24.04 provide these names). Pandoc is required for every export; LaTeX
+  # only for PDF via LaTeX.
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libuuid1
+    - libsecret-1-0
+    - pandoc
+  recommends:
+    - texlive-luatex
+    - texlive-latex-extra
+fileAssociations:
+  - ext: md
+    name: Markdown document
+    mimeType: text/markdown
