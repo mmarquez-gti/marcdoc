@@ -49,3 +49,10 @@ export async function hasCover(template: Package, mapping: StyleMapping): Promis
   const tags = contentControlTags(await template.readXml('word/document.xml'))
   return tags.some((tag) => tag in mapping.cover)
 }
+
+/** Tags of the content controls in the template body, e.g. its cover fields. */
+export async function templateCoverTags(template: Package): Promise<string[]> {
+  return [...new Set(contentControlTags(await template.readXml('word/document.xml')))].filter(
+    Boolean,
+  )
+}

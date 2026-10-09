@@ -1,6 +1,6 @@
 // Mapping from Markdown elements to the styles of a Word template, stored next to the template
 // as `<template>.marcdoc.json` (ADR-0002).
-import type { StyleInfo } from './styles'
+import type { StyleInfo, StyleType } from './styles'
 
 export const MAPPING_KEYS = [
   'paragraph',
@@ -23,7 +23,35 @@ export const MAPPING_KEYS = [
 
 export type MappingKey = (typeof MAPPING_KEYS)[number]
 
+/** How each Markdown element is shown in the mapping editor, and the style type it needs. */
+export const MAPPING_KEY_INFO: Readonly<
+  Record<MappingKey, { readonly label: string; readonly styleType: StyleType }>
+> = {
+  paragraph: { label: 'Paragraph', styleType: 'paragraph' },
+  compactParagraph: { label: 'List item text', styleType: 'paragraph' },
+  heading1: { label: 'Heading 1', styleType: 'paragraph' },
+  heading2: { label: 'Heading 2', styleType: 'paragraph' },
+  heading3: { label: 'Heading 3', styleType: 'paragraph' },
+  heading4: { label: 'Heading 4', styleType: 'paragraph' },
+  heading5: { label: 'Heading 5', styleType: 'paragraph' },
+  heading6: { label: 'Heading 6', styleType: 'paragraph' },
+  blockquote: { label: 'Quote', styleType: 'paragraph' },
+  codeBlock: { label: 'Code block', styleType: 'paragraph' },
+  inlineCode: { label: 'Inline code', styleType: 'character' },
+  table: { label: 'Table', styleType: 'table' },
+  caption: { label: 'Caption', styleType: 'paragraph' },
+  footnoteText: { label: 'Footnote text', styleType: 'paragraph' },
+  footnoteReference: { label: 'Footnote reference', styleType: 'character' },
+  hyperlink: { label: 'Link', styleType: 'character' },
+}
+
 export const DEFAULT_BODY_PLACEHOLDER = '{{body}}'
+const MAPPING_SUFFIX = '.marcdoc.json'
+
+/** `report.dotx` -> `report.marcdoc.json`, next to the template. */
+export function mappingPathFor(templatePath: string): string {
+  return templatePath.replace(/\.(docx|dotx)$/i, '') + MAPPING_SUFFIX
+}
 export const MAPPING_VERSION = 1
 
 export interface StyleMapping {
@@ -124,4 +152,39 @@ export function defaultMapping(catalog: readonly StyleInfo[]): StyleMapping {
     styles,
     cover: { title: 'title', subtitle: 'subtitle', author: 'author', date: 'date' },
   }
+}
+
+/** Mapping file contents: stable key order and only the styles that are set. */
+export function serializeMapping(mapping: StyleMapping): string {
+  const styles = Object.fromEntries(
+    MAPPING_KEYS.flatMap((key) => (mapping.styles[key] ? [[key, mapping.styles[key]]] : [])),
+  )
+  const file = {
+    version: MAPPING_VERSION,
+    bodyPlaceholder: mapping.bodyPlaceholder,
+    styles,
+    cover: mapping.cover,
+  }
+  return `${JSON.stringify(file, null, 2)}\n`
+}
+
+/**
+ * Problems that make a mapping unusable with a template: styles it does not define, or of the
+ * wrong type. Returns an empty list when the mapping fits.
+ */
+export function checkMappingAgainst(
+  mapping: StyleMapping,
+  catalog: readonly StyleInfo[],
+): string[] {
+  const byId = new Map(catalog.map((style) => [style.id, style]))
+  return MAPPING_KEYS.flatMap((key) => {
+    const id = mapping.styles[key]
+    if (!id) return []
+    const style = byId.get(id)
+    const { label, styleType } = MAPPING_KEY_INFO[key]
+    if (!style) return [`${label}: the template has no style "${id}".`]
+    if (style.type !== styleType)
+      return [`${label}: "${style.name}" is a ${style.type} style; a ${styleType} style is needed.`]
+    return []
+  })
 }
