@@ -50,8 +50,20 @@ LaTeX and Word (.docx), including export that follows the styles of a Word templ
 
 ## Installation
 
+### From a package
+
+Build the packages with `npm run package`; they are written to `dist/`:
+
+- **AppImage:** `chmod +x MarcDoc-<version>.AppImage` and run it. Requires FUSE 2
+  (`libfuse2t64` on Ubuntu 24.04, `libfuse2` before).
+- **Debian/Ubuntu:** `sudo apt install ./marcdoc_<version>_amd64.deb`. Installs Pandoc as a
+  dependency and recommends the LaTeX packages for PDF via LaTeX.
+
+### From source
+
 ```sh
 npm install
+npm run dev
 ```
 
 ## Usage
