@@ -290,6 +290,8 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | R8 | ~~Milkdown no permite el control necesario~~ Cerrado: ADR-0001 elige ProseMirror directo. Nuevo riesgo: coste de montar la capa de edición | Media | Medio | Usar los paquetes oficiales `prosemirror-*`; H1.3 y H1.4 ampliados |
 | R9 | Versión de Pandoc del sistema (3.1.3) antigua o distinta en otros equipos | Media | Bajo | Declarar una versión mínima y comprobarla en `ToolchainDetector` |
 | R10 | Poca dedicación semanal: se amplía el alcance o se pierde el contexto entre sesiones | Alta | Medio | Hitos pequeños, ADRs y notas de estado en cada hito |
+| R11 | Un test e2e de escritura en el WYSIWYG falla de forma intermitente (≈1 de cada 6 ejecuciones completas, siempre tras las pruebas de integración); causa no identificada | Media | Bajo | Investigar si es el test o el editor bajo carga; no se ha ocultado con reintentos |
+| R12 | Windows y macOS no se han probado (ADR-0005) | Alta | Alto | CI con ejecutores Windows/macOS o prueba manual antes de anunciar soporte |
 
 ## 8. Supuestos y preguntas abiertas
 
@@ -326,3 +328,7 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | 09/10/2026 | H3.4 | Citas `[@clave]` con citeproc (ADR-0003); nodo `citation` en el editor, sin escapes |
 | 09/10/2026 | H3.5 | Referencias cruzadas estilo pandoc-crossref (ADR-0004); marcadores válidos para Word |
 | 09/10/2026 | **Fase 3 completada** | 178 tests unitarios, 59 de integración, 48 e2e y la prueba del paquete en verde. Pendiente: revisión en Word Online (criterio 3 del MVP) |
+| 09/10/2026 | H4.1 | Preservación del formato: solo se reescriben los bloques editados; el corpus sin editar sale byte a byte igual (ADR-0001, revisión H4.1) |
+| 09/10/2026 | H4.2 | Interfaz en inglés y español; idioma del sistema o elegido en Ver → Idioma, guardado en la configuración del usuario |
+| 09/10/2026 | H4.3 | Código portable (rutas, `TEXINPUTS`, CRLF, convenciones de macOS) y objetivos de Windows y macOS. **Sin probar en esos sistemas** (ADR-0005) |
+| 09/10/2026 | **Fase 4 completada** | 225 tests unitarios, 59 de integración, 52 e2e y la prueba del paquete. Pendiente: revisión en Word Online; pruebas en Windows y macOS |
