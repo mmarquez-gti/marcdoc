@@ -49,6 +49,8 @@ export function App() {
           initialFormat={exporter.lastFormat}
           template={exporter.template}
           onTemplateChange={exporter.setTemplate}
+          latexTemplate={exporter.latexTemplate}
+          onLatexTemplateChange={exporter.setLatexTemplate}
           onExport={(format) => void exporter.run(format)}
           onClose={exporter.closeDialog}
         />

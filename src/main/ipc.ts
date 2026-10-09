@@ -5,6 +5,7 @@ import { IpcChannel, type ExportRequest } from '../shared/ipc'
 import type { ExportService } from './export/exportService'
 import type { AssetService } from './services/assetService'
 import type { FileService } from './services/fileService'
+import type { LatexTemplateService } from './services/latexTemplateService'
 import type { TemplateService } from './services/templateService'
 import { detectToolchain } from './services/toolchainDetector'
 
@@ -22,11 +23,12 @@ export interface Services {
   readonly assets: AssetService
   readonly exporter: ExportService
   readonly templates: TemplateService
+  readonly latexTemplates: LatexTemplateService
 }
 
 export function registerIpcHandlers(
   window: BrowserWindow,
-  { files, assets, exporter, templates }: Services,
+  { files, assets, exporter, templates, latexTemplates }: Services,
   state: WindowState,
 ): void {
   ipcMain.handle(IpcChannel.OpenDocument, async () => {
@@ -63,6 +65,7 @@ export function registerIpcHandlers(
     const format = EXPORT_FORMATS[request.format]
     if (!format) throw new Error(`Unknown export format: ${String(request.format)}`)
     if (request.templatePath) await templates.assertAllowed(request.templatePath)
+    if (request.latexTemplatePath) await latexTemplates.assertAllowed(request.latexTemplatePath)
     const defaultName = defaultOutputName(request.documentPath, request.format)
     const result = await dialog.showSaveDialog(window, {
       defaultPath: request.documentPath
@@ -83,6 +86,17 @@ export function registerIpcHandlers(
     })
     const path = result.filePaths[0]
     return result.canceled || !path ? null : templates.choose(path)
+  })
+
+  ipcMain.handle(IpcChannel.ListLatexTemplates, () => latexTemplates.bundled())
+
+  ipcMain.handle(IpcChannel.ChooseLatexTemplate, async () => {
+    const result = await dialog.showOpenDialog(window, {
+      properties: ['openFile'],
+      filters: [{ name: 'Pandoc LaTeX templates', extensions: ['latex', 'tex'] }],
+    })
+    const path = result.filePaths[0]
+    return result.canceled || !path ? null : latexTemplates.choose(path)
   })
 
   ipcMain.handle(IpcChannel.InspectTemplate, (_event, path: string) => templates.inspect(path))

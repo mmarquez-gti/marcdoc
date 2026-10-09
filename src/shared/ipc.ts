@@ -12,6 +12,8 @@ export const IpcChannel = {
   ListTemplates: 'template:list',
   ChooseTemplate: 'template:choose',
   InspectTemplate: 'template:inspect',
+  ListLatexTemplates: 'latex-template:list',
+  ChooseLatexTemplate: 'latex-template:choose',
   SaveMapping: 'template:save-mapping',
   MenuCommand: 'menu:command',
 } as const
@@ -30,6 +32,13 @@ export interface ExportRequest {
   readonly documentPath: string | null
   /** Word template for .docx export; null or absent uses MarcDoc's default template. */
   readonly templatePath?: string | null
+  /** Pandoc LaTeX template for PDF (LaTeX) and .tex; null or absent uses Pandoc's default. */
+  readonly latexTemplatePath?: string | null
+}
+
+export interface LatexTemplateInfo {
+  readonly path: string
+  readonly name: string
 }
 
 export interface TemplateInfo {
@@ -100,6 +109,9 @@ export interface MarcDocApi {
   /** Shows the open dialog for a Word template; resolves to null if the user cancels. */
   chooseTemplate(): Promise<TemplateInfo | null>
   inspectTemplate(path: string): Promise<TemplateDetails>
+  listLatexTemplates(): Promise<LatexTemplateInfo[]>
+  /** Shows the open dialog for a Pandoc LaTeX template; resolves to null if the user cancels. */
+  chooseLatexTemplate(): Promise<LatexTemplateInfo | null>
   /** Writes `<template>.marcdoc.json`; rejects mappings that do not fit the template. */
   saveMapping(path: string, mapping: StyleMapping): Promise<TemplateInfo>
   /** Asks where to save, then exports; resolves to null if the user cancels the dialog. */

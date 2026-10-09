@@ -5,6 +5,7 @@ import {
   latexArgs,
   pdfViaLatexArgs,
   printableHtmlArgs,
+  texInputsFor,
   type ExportFormat,
   type PandocInvocation,
 } from '../../core'
@@ -24,6 +25,8 @@ export interface ExportJob {
   readonly outputPath: string
   /** Word template for .docx export; null uses MarcDoc's default template. */
   readonly templatePath?: string | null
+  /** Pandoc LaTeX template for LaTeX outputs; null uses Pandoc's default. */
+  readonly latexTemplatePath?: string | null
 }
 
 export class ExportService {
@@ -52,14 +55,21 @@ export class ExportService {
   ): Promise<string[]> {
     // Pandoc writes LaTeX auxiliary files to its working directory; keep them out of the user's.
     const options = { cwd: workDir }
+    const latexTemplate = job.latexTemplatePath ?? null
+    // Classes and packages shipped next to a LaTeX template must be found by LuaLaTeX.
+    const latexEnv = latexTemplate
+      ? { TEXINPUTS: texInputsFor(dirname(resolve(latexTemplate)), process.env['TEXINPUTS']) }
+      : undefined
     switch (job.format) {
       case 'latex':
-        return (await runPandoc(latexArgs(invocation), job.markdown, options)).warnings
+        return (await runPandoc(latexArgs(invocation, latexTemplate), job.markdown, options))
+          .warnings
       case 'pdf-latex':
         return (
-          await runPandoc(pdfViaLatexArgs(invocation), job.markdown, {
+          await runPandoc(pdfViaLatexArgs(invocation, latexTemplate), job.markdown, {
             ...options,
             timeoutMs: PDF_TIMEOUT_MS,
+            ...(latexEnv ? { env: latexEnv } : {}),
           })
         ).warnings
       case 'pdf-html': {

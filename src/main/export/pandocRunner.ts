@@ -26,11 +26,17 @@ export interface PandocResult {
 export function runPandoc(
   args: readonly string[],
   input: string,
-  options: { readonly cwd?: string; readonly timeoutMs?: number } = {},
+  options: {
+    readonly cwd?: string
+    readonly timeoutMs?: number
+    /** Extra environment variables, e.g. TEXINPUTS for LaTeX templates with their own classes. */
+    readonly env?: Readonly<Record<string, string>>
+  } = {},
 ): Promise<PandocResult> {
   return new Promise((resolve, reject) => {
     const child = spawn('pandoc', [...args], {
       cwd: options.cwd,
+      env: options.env ? { ...process.env, ...options.env } : process.env,
       timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     })
     const stdout: Buffer[] = []

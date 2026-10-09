@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DocumentState } from '../../../core'
 import type { ExportFormat } from '../../../core/export/formats'
-import type { TemplateInfo } from '../../../shared/ipc'
+import type { LatexTemplateInfo, TemplateInfo } from '../../../shared/ipc'
+
+const USES_LATEX_TEMPLATE: ReadonlySet<ExportFormat> = new Set(['pdf-latex', 'latex'])
 
 export type ExportStatus =
   | { readonly kind: 'idle' }
@@ -17,6 +19,9 @@ export interface ExportController {
   /** Word template for this session; null is MarcDoc's default template. */
   readonly template: TemplateInfo | null
   setTemplate(template: TemplateInfo | null): void
+  /** Pandoc LaTeX template for this session; null is Pandoc's default template. */
+  readonly latexTemplate: LatexTemplateInfo | null
+  setLatexTemplate(template: LatexTemplateInfo | null): void
   openDialog(): void
   closeDialog(): void
   run(format: ExportFormat): Promise<void>
@@ -28,12 +33,13 @@ export function useExport(document: DocumentState): ExportController {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [lastFormat, setLastFormat] = useState<ExportFormat>('docx')
   const [template, setTemplate] = useState<TemplateInfo | null>(null)
+  const [latexTemplate, setLatexTemplate] = useState<LatexTemplateInfo | null>(null)
   const documentRef = useRef(document)
-  const templateRef = useRef(template)
+  const templatesRef = useRef({ template, latexTemplate })
   useEffect(() => {
     documentRef.current = document
-    templateRef.current = template
-  }, [document, template])
+    templatesRef.current = { template, latexTemplate }
+  }, [document, template, latexTemplate])
 
   const run = useCallback(async (format: ExportFormat) => {
     const { content, path } = documentRef.current
@@ -45,7 +51,10 @@ export function useExport(document: DocumentState): ExportController {
         format,
         markdown: content,
         documentPath: path,
-        templatePath: format === 'docx' ? (templateRef.current?.path ?? null) : null,
+        templatePath: format === 'docx' ? (templatesRef.current.template?.path ?? null) : null,
+        latexTemplatePath: USES_LATEX_TEMPLATE.has(format)
+          ? (templatesRef.current.latexTemplate?.path ?? null)
+          : null,
       })
       setStatus(result ? { kind: 'done', ...result } : { kind: 'idle' })
     } catch (error) {
@@ -69,6 +78,8 @@ export function useExport(document: DocumentState): ExportController {
     lastFormat,
     template,
     setTemplate,
+    latexTemplate,
+    setLatexTemplate,
     openDialog: useCallback(() => setDialogOpen(true), []),
     closeDialog: useCallback(() => setDialogOpen(false), []),
     run,
