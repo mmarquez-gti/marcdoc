@@ -3,7 +3,7 @@
 Desktop Markdown editor with two synchronized views (WYSIWYG and source) and export to PDF,
 LaTeX and Word (.docx), including export that follows the styles of a Word template.
 
-> Status: editor complete (phase 1); export in progress (phase 2). See [PLAN.md](PLAN.md).
+> Status: MVP feature-complete (phases 0–2), pending the manual review in Word. See [PLAN.md](PLAN.md).
 
 ## Features
 
@@ -17,6 +17,14 @@ LaTeX and Word (.docx), including export that follows the styles of a Word templ
   document view writes normalized Markdown.
 - Images use paths relative to the document. Pasted or dropped images are copied into an
   `assets/` folder next to it (save the document first).
+- Export (`Ctrl+E`) to Word (.docx), PDF via LaTeX, PDF via HTML and LaTeX (.tex).
+- Word export follows a template (.docx or .dotx): its styles, cover page, headers and
+  footers, sections and list numbering. A `<template>.marcdoc.json` file next to the
+  template maps Markdown elements to the template's style IDs (see
+  `resources/templates/docx/*.marcdoc.json`); without it, Word's built-in styles are used.
+  Templates in any Word UI language work. Every .docx is normalized to the OOXML schema and
+  checked by a linter; see `docs/adr/0002-docx-pipeline.md` and
+  `docs/validation/word-online-checklist.md`.
 
 ## Document view shortcuts
 
@@ -35,7 +43,9 @@ LaTeX and Word (.docx), including export that follows the styles of a Word templ
 - Node.js >= 22.12
 - External tools used for export (detected at runtime, not bundled):
   - [Pandoc](https://pandoc.org/) >= 3.1
-  - TeX Live with `lualatex`
+  - For PDF via LaTeX: TeX Live with LuaLaTeX and the packages Pandoc's template needs
+    (`sudo apt install texlive-luatex texlive-latex-extra`)
+  - For development only: LibreOffice and `pdftoppm` (visual regression tests)
 - For development only: Docker, used to run the Open XML SDK validator in `tools/ooxml-validator`
 
 ## Installation
@@ -53,6 +63,7 @@ npm install
 | `npm test`                             | Run unit tests                                                                                               |
 | `npm run test:e2e`                     | Build and run end-to-end tests against the Electron app                                                      |
 | `npm run test:integration`             | Export the corpus to Word with every template and validate it (requires Pandoc; Docker for the Open XML SDK) |
+| `npm run validation:samples`           | Export review documents for the Word Online checklist into `.work/validation/`                               |
 | `npm run validate:docx -- <file.docx>` | Validate a .docx with the Open XML SDK (requires Docker)                                                     |
 | `npm run lint`                         | Lint the code                                                                                                |
 | `npm run format`                       | Format the code                                                                                              |

@@ -303,3 +303,9 @@ Preservación del formato original del .md, i18n, otros sistemas operativos.
 | 09/10/2026 | H1.6 | Sincronización por bloques con *debounce*; serialización incremental (~53 ms → ~0,5 ms por pulsación en ~11 000 palabras). `sourceLine` eliminado (ver ADR-0001) |
 | 09/10/2026 | H1.7 | Scroll sincronizado, modos de vista, prueba de aceptación e2e |
 | 09/10/2026 | **Fase 1 completada** | 109 tests unitarios y 29 e2e en verde. Siguiente: H2.1 (exportación a .tex y PDF) |
+| 09/10/2026 | H2.1 | Exportación a .tex, PDF vía LuaLaTeX y PDF vía HTML (ventana oculta sin JavaScript). Detección de paquetes LaTeX que faltan. **PDF vía LaTeX sin verificar**: faltan `texlive-luatex` y `texlive-latex-extra` en el equipo |
+| 09/10/2026 | H2.2 | Adaptador y linter en `core/docx`; plantilla por defecto; integración: corpus × plantillas validado con el Open XML SDK (0 errores) |
+| 09/10/2026 | H2.3–H2.4 | Mapeo validado y mapeo por defecto por nombre de estilo; fusión de notas al pie, numeración y secciones; probado con una plantilla tipo Word |
+| 09/10/2026 | H2.5 | Plantillas es/en/default reproducibles; comparación visual con LibreOffice (capa c); lista de comprobación de Word Online (capa d) |
+| 09/10/2026 | H2.6 | Diálogo de exportación, errores legibles, prueba de aceptación del MVP |
+| 09/10/2026 | **Fase 2 completada (pendiente de verificación manual)** | Criterio 1 del MVP: cumplido. Criterio 2: cumplido para .docx y PDF vía HTML; PDF vía LaTeX pendiente de instalar paquetes. Criterio 3: pendiente de la revisión en Word Online |
