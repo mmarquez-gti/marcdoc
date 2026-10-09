@@ -96,3 +96,46 @@ test('keeps HTML blocks verbatim and read-only', async () => {
   await expect(raw).toContainText('<div class="note">')
   await expect(raw).toHaveAttribute('contenteditable', 'false')
 })
+
+test('creates and edits a GFM table', async () => {
+  const { page } = launched
+  await wysiwyg(page).click()
+  await page.getByRole('button', { name: 'Insert table' }).click()
+  await page.keyboard.type('Name')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('Qty')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('Price')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('Apple')
+  await page.getByRole('button', { name: 'Align column right' }).click()
+  await page.getByRole('button', { name: 'Delete row' }).click()
+
+  await expect
+    .poll(() => sourceText(page))
+    .toBe('| Name | Qty | Price |\n| ---: | --- | ----- |\n|      |     |       |\n')
+  await page.screenshot({ path: '.work/screens/h1.4-table.png' })
+})
+
+test('renders task items as checkboxes that update the source', async () => {
+  const { page } = launched
+  await wysiwyg(page).click()
+  await page.keyboard.type('- [ ] write tests\nship it')
+  await page.getByRole('button', { name: 'Task list' }).click()
+  await page.getByRole('button', { name: 'Task list' }).click()
+
+  const checkboxes = wysiwyg(page).getByRole('checkbox', { name: 'Task done' })
+  await expect(checkboxes).toHaveCount(2)
+  await checkboxes.first().click()
+
+  await expect.poll(() => sourceText(page)).toBe('- [x] write tests\n- [ ] ship it\n')
+})
+
+test('applies strikethrough from the toolbar', async () => {
+  const { page } = launched
+  await wysiwyg(page).click()
+  await page.keyboard.type('obsolete')
+  await page.keyboard.press('Shift+Home')
+  await page.getByRole('button', { name: /Strikethrough/ }).click()
+  await expect.poll(() => sourceText(page)).toBe('~~obsolete~~\n')
+})
