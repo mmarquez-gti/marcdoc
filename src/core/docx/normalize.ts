@@ -1,7 +1,7 @@
 // Reorders the children of WordprocessingML property elements into the sequence required
 // by the ECMA-376 schema. Word tolerates many ordering errors; strict consumers do not.
 import type { Document, Element } from '@xmldom/xmldom'
-import { childElements, descendants, W_NS } from './ooxml'
+import { childElements, descendants, W_NS } from './package'
 
 const RUN_PROPERTIES = [
   'ins',
