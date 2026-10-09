@@ -71,16 +71,24 @@ export function buildStyleIdMap(
   templateStyles: Document,
   mapping: StyleMapping,
 ): Map<string, string> {
-  const templateIds = new Set(styleDefinitions(templateStyles).keys())
+  const templateDefs = styleDefinitions(templateStyles)
   const result = new Map<string, string>()
 
   for (const [sourceId, style] of styleDefinitions(sourceStyles)) {
     const element = PANDOC_STYLE_ELEMENTS[styleName(style) ?? '']
     const targetId = element ? mapping.styles[element] : undefined
     if (!targetId || targetId === sourceId) continue
-    if (!templateIds.has(targetId)) {
+    const target = templateDefs.get(targetId)
+    if (!target) {
       throw new Error(
         `The mapping sets "${element}" to style "${targetId}", which the template does not define.`,
+      )
+    }
+    const expectedType = wAttr(style, 'type') ?? 'paragraph'
+    const actualType = wAttr(target, 'type') ?? 'paragraph'
+    if (expectedType !== actualType) {
+      throw new Error(
+        `The mapping sets "${element}" to "${targetId}", a ${actualType} style; it needs a ${expectedType} style.`,
       )
     }
     result.set(sourceId, targetId)

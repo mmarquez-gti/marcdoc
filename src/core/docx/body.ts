@@ -1,5 +1,5 @@
 import type { Document, Element } from '@xmldom/xmldom'
-import { descendants, elements, W_NS, wAttr } from './package'
+import { childElements, descendants, elements, W_NS, wAttr } from './package'
 
 function paragraphText(paragraph: Element): string {
   return descendants(paragraph, W_NS, 't')
@@ -21,9 +21,18 @@ export function placeBody(
     (paragraph) => paragraphText(paragraph).trim() === placeholder,
   )
   if (target) {
-    const parent = target.parentNode!
+    const parent = target.parentNode! as Element
     for (const block of blocks) parent.insertBefore(document.importNode(block, true), target)
-    parent.removeChild(target)
+    const properties = elements(target, W_NS, 'pPr')[0]
+    if (properties && elements(properties, W_NS, 'sectPr').length > 0) {
+      // The placeholder paragraph ends a section: keep it (and the break), drop only its text.
+      for (const child of childElements(target).filter((element) => element !== properties)) {
+        target.removeChild(child)
+      }
+    } else {
+      parent.removeChild(target)
+    }
+    ensureCellEndsWithParagraph(parent)
     return true
   }
   const body = elements(document.documentElement!, W_NS, 'body')[0]
@@ -32,6 +41,15 @@ export function placeBody(
   const finalSection = elements(body, W_NS, 'sectPr')[0] ?? null
   for (const block of blocks) body.insertBefore(document.importNode(block, true), finalSection)
   return false
+}
+
+/** A table cell must end with a paragraph; inserted content may have ended it with a table. */
+function ensureCellEndsWithParagraph(container: Element): void {
+  if (container.namespaceURI !== W_NS || container.localName !== 'tc') return
+  const last = childElements(container).at(-1)
+  if (last?.localName !== 'p') {
+    container.appendChild(container.ownerDocument!.createElementNS(W_NS, 'w:p'))
+  }
 }
 
 function metadataText(value: unknown): string {

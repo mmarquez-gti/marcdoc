@@ -5,9 +5,10 @@ import type { StyleMapping } from './mapping'
 import { fixAttributeValues, fixLongHexNumbers, normalizeElementOrder } from './normalize'
 import { childElements, elements, Package, relsPathOf, W_NS } from './package'
 import {
-  copyFootnotes,
   copyRelationships,
+  mergeFootnotes,
   mergeNumbering,
+  remapFootnoteReferences,
   remapNumIds,
   rewriteRelationshipIds,
 } from './parts'
@@ -63,17 +64,18 @@ export async function adaptToTemplate(
 
   const relIdMap = await copyRelationships(source, template, sourceRels, rels, contentTypes, blocks)
   const numIdMap = await mergeNumbering(source, template, rels, contentTypes)
+  const footnotes = await mergeFootnotes(source, template, rels, contentTypes, styleIdMap, numIdMap)
   for (const block of blocks) {
     rewriteRelationshipIds(block, relIdMap)
     remapStyles(block, styleIdMap)
     remapNumIds(block, numIdMap)
+    if (footnotes) remapFootnoteReferences(block, footnotes.idMap)
   }
-  const footnotes = await copyFootnotes(source, template, rels, contentTypes, styleIdMap, numIdMap)
 
   const placeholderFound = placeBody(document, input.mapping.bodyPlaceholder, blocks)
   const filledCoverTags = fillCover(document, input.mapping.cover, input.metadata)
   const copiedStyles = copyMissingStyles(
-    footnotes ? [document, footnotes] : [document],
+    footnotes ? [document, footnotes.footnotes] : [document],
     sourceStyles,
     styles,
     styleIdMap,

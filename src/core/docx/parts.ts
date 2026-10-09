@@ -212,47 +212,91 @@ export function remapNumIds(root: Element | Document, numIdMap: ReadonlyMap<stri
   }
 }
 
+const FOOTNOTES_PART = 'word/footnotes.xml'
+
+export interface FootnotesMerge {
+  /** The merged footnotes part, for checks that need it (e.g. styles used). */
+  readonly footnotes: Document
+  /** Pandoc footnote ID -> ID in the merged part; apply to footnoteReference in the body. */
+  readonly idMap: ReadonlyMap<string, string>
+}
+
 /**
- * Replaces the template's footnotes part with Pandoc's, which includes the separator notes.
- * Returns the footnotes document (already remapped) so its styles can be checked, or null.
+ * Adds Pandoc's footnotes to the template. The template's own notes, including the separator
+ * notes Word's settings refer to, are kept; Pandoc's normal notes get IDs after the template's.
+ * Without a footnotes part in the template, Pandoc's (separators included) is used as is.
  */
-export async function copyFootnotes(
+export async function mergeFootnotes(
   source: Package,
   template: Package,
   templateRels: Document,
   contentTypes: Document,
   styleIdMap: ReadonlyMap<string, string>,
   numIdMap: ReadonlyMap<string, string>,
-): Promise<Document | null> {
-  if (!source.has('word/footnotes.xml')) return null
-  const footnotes = await source.readXml('word/footnotes.xml')
+): Promise<FootnotesMerge | null> {
+  if (!source.has(FOOTNOTES_PART)) return null
+  const sourceFootnotes = await source.readXml(FOOTNOTES_PART)
+  const sourceNotes = childElements(sourceFootnotes.documentElement!)
 
-  if (source.has(relsPathOf('word/footnotes.xml'))) {
-    const sourceRels = await source.readXml(relsPathOf('word/footnotes.xml'))
-    const targetRels = template.has(relsPathOf('word/footnotes.xml'))
-      ? await template.readXml(relsPathOf('word/footnotes.xml'))
-      : sourceRels.implementation.createDocument(PKG_RELS_NS, 'Relationships', null)
-    const notes = childElements(footnotes.documentElement!)
+  const relsPath = relsPathOf(FOOTNOTES_PART)
+  const targetRels = template.has(relsPath)
+    ? await template.readXml(relsPath)
+    : sourceFootnotes.implementation.createDocument(PKG_RELS_NS, 'Relationships', null)
+  if (source.has(relsPath)) {
+    const sourceRels = await source.readXml(relsPath)
     const relIdMap = await copyRelationships(
       source,
       template,
       sourceRels,
       targetRels,
       contentTypes,
-      notes,
+      sourceNotes,
     )
-    notes.forEach((note) => rewriteRelationshipIds(note, relIdMap))
-    template.writeXml(relsPathOf('word/footnotes.xml'), targetRels)
+    sourceNotes.forEach((note) => rewriteRelationshipIds(note, relIdMap))
+  }
+  for (const note of sourceNotes) {
+    remapStyles(note, styleIdMap)
+    remapNumIds(note, numIdMap)
   }
 
-  remapStyles(footnotes, styleIdMap)
-  remapNumIds(footnotes, numIdMap)
+  const idMap = new Map<string, string>()
+  let footnotes: Document
+  if (template.has(FOOTNOTES_PART)) {
+    footnotes = await template.readXml(FOOTNOTES_PART)
+    const root = footnotes.documentElement!
+    let nextId =
+      Math.max(0, ...childElements(root).map((note) => Number(wAttr(note, 'id')) || 0)) + 1
+    // Separator notes stay the template's; only real notes move over.
+    for (const note of sourceNotes.filter((candidate) => wAttr(candidate, 'type') === null)) {
+      const copy = footnotes.importNode(note, true) as Element
+      const newId = String(nextId++)
+      idMap.set(wAttr(note, 'id') ?? '', newId)
+      copy.setAttributeNS(W_NS, 'w:id', newId)
+      root.appendChild(copy)
+    }
+  } else {
+    footnotes = sourceFootnotes
+  }
+
   fixAttributeValues(footnotes)
   normalizeElementOrder(footnotes)
-  template.writeXml('word/footnotes.xml', footnotes)
+  template.writeXml(FOOTNOTES_PART, footnotes)
+  if (elements(targetRels.documentElement!, PKG_RELS_NS, 'Relationship').length > 0) {
+    template.writeXml(relsPath, targetRels)
+  }
   if (!hasRelationshipOfType(templateRels, `${REL_TYPE}/footnotes`)) {
     addRelationship(templateRels, `${REL_TYPE}/footnotes`, 'footnotes.xml', false)
   }
   ensureOverride(contentTypes, '/word/footnotes.xml', `${WML_CT}.footnotes+xml`)
-  return footnotes
+  return { footnotes, idMap }
+}
+
+export function remapFootnoteReferences(
+  root: Element | Document,
+  idMap: ReadonlyMap<string, string>,
+): void {
+  for (const reference of descendants(root, W_NS, 'footnoteReference')) {
+    const target = idMap.get(wAttr(reference, 'id') ?? '')
+    if (target) reference.setAttributeNS(W_NS, 'w:id', target)
+  }
 }
