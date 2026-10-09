@@ -34,6 +34,10 @@ export function ToolchainBanner() {
 
 function describeProblem(tool: ToolStatus): string {
   if (!tool.found) return `${tool.label} not found. ${tool.purpose} will not be available.`
+  if (tool.missingFiles.length > 0) {
+    const hint = tool.installHint ? ` Install them with: ${tool.installHint}` : ''
+    return `${tool.label} is missing ${tool.missingFiles.join(', ')}. ${tool.purpose} will fail.${hint}`
+  }
   const found = tool.version ?? 'unknown version'
   return `${tool.label} ${found} is older than the required ${tool.minimumVersion}. ${tool.purpose} may fail.`
 }

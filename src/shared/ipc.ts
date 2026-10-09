@@ -27,6 +27,10 @@ export interface ToolStatus {
   readonly version: string | null
   /** Lowest supported version, or null when any version works. */
   readonly minimumVersion: string | null
+  /** Required TeX packages that are not installed. */
+  readonly missingFiles: readonly string[]
+  /** Command that installs what is missing, if known. */
+  readonly installHint: string | null
   readonly supported: boolean
   /** What the user loses if the tool is missing or too old. */
   readonly purpose: string

@@ -42,9 +42,30 @@ describe('toolStatus', () => {
     })
   })
 
-  it('accepts any LuaLaTeX version', () => {
-    expect(toolStatus(lualatex, 'This is LuaHBTeX, Version 1.10.0')).toMatchObject({
+  it('accepts any LuaLaTeX version when its packages are installed', () => {
+    const paths = lualatex.requiredTeXFiles!.map((file) => `/texmf/${file}`)
+    expect(toolStatus(lualatex, 'This is LuaHBTeX, Version 1.10.0', paths)).toMatchObject({
       supported: true,
+    })
+  })
+})
+
+describe('toolStatus with required TeX files', () => {
+  const versionOutput = 'This is LuaHBTeX, Version 1.17.0'
+
+  it('reports missing packages and marks the tool unsupported', () => {
+    const status = toolStatus(lualatex, versionOutput, ['/texmf/tex/latex/fontspec/fontspec.sty'])
+    expect(status.supported).toBe(false)
+    expect(status.missingFiles).toContain('luaotfload.sty')
+    expect(status.missingFiles).not.toContain('fontspec.sty')
+    expect(status.installHint).toContain('texlive-luatex')
+  })
+
+  it('is supported when every required file is found', () => {
+    const paths = lualatex.requiredTeXFiles!.map((file) => `/texmf/${file}`)
+    expect(toolStatus(lualatex, versionOutput, paths)).toMatchObject({
+      supported: true,
+      missingFiles: [],
     })
   })
 })
