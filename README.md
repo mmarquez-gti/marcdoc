@@ -45,7 +45,8 @@ LaTeX and Word (.docx), including export that follows the styles of a Word templ
 
 ## Requirements
 
-- Linux (Ubuntu)
+- Linux (Ubuntu). Windows and macOS packages can be built but have not been tested on those
+  systems; see `docs/adr/0005-platform-support.md`.
 - Node.js >= 22.12
 - External tools used for export (detected at runtime, not bundled):
   - [Pandoc](https://pandoc.org/) >= 3.1
