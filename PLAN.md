@@ -240,9 +240,15 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | H2.5 | Dos plantillas de ejemplo (en español y en inglés), comparación visual (capa c), lista de comprobación de Word Online (capa d) | 2 sem | H2.4 |
 | H2.6 | Diálogo de exportación en la UI, gestión de errores de Pandoc y LaTeX, prueba de aceptación del MVP | 1 sem | H2.1, H2.5 |
 
-### Fase 3 — Post-MVP (sin estimar)
+### Fase 3 — Post-MVP (≈ 9 semanas)
 
-Plantillas LaTeX propias, editor visual del mapeo de estilos, citas BibTeX/CSL, referencias cruzadas, empaquetado (AppImage/.deb).
+| Hito | Tareas | Duración | Depende de |
+|---|---|---|---|
+| H3.1 | Editor visual del mapeo de estilos: elegir, para cada elemento Markdown, un estilo de la plantilla del tipo correcto; campos de portada; guardar `<plantilla>.marcdoc.json` | 2 sem | H2.6 |
+| H3.2 | Plantillas LaTeX propias: elegir una plantilla de Pandoc (`.latex`) para PDF y .tex, con las mismas reglas de seguridad que las de Word | 1–2 sem | H2.1 |
+| H3.3 | Empaquetado AppImage y .deb con `electron-builder`; recursos fuera del asar | 1–2 sem | — |
+| H3.4 | Citas `[@clave]` con BibTeX/CSL (`bibliography` y `csl` en el YAML, `--citeproc`); decisión sobre el lector de Pandoc en ADR-0003 | 2 sem | H2.x |
+| H3.5 | Referencias cruzadas a figuras y tablas. **La sintaxis requiere decisión del usuario** (GFM no tiene atributos) | 2 sem | H3.4 |
 
 ### Fase 4 — Fidelidad avanzada (sin estimar)
 
