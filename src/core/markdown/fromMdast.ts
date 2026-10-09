@@ -159,6 +159,8 @@ class MdastConverter {
             marks,
           ),
         ]
+      case 'citation':
+        return [schema.node('citation', { value: node.value }, undefined, marks)]
       case 'inlineMath':
         return [schema.node('math_inline', { value: node.value }, undefined, marks)]
       case 'footnoteReference':

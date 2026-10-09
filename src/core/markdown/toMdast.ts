@@ -182,6 +182,8 @@ function leafToMdast(node: PMNode): PhrasingContent {
       return { type: 'image', url: attrs['src'], alt: attrs['alt'], title: attrs['title'] }
     case 'math_inline':
       return { type: 'inlineMath', value: attrs['value'] }
+    case 'citation':
+      return { type: 'citation', value: attrs['value'] }
     case 'footnote_reference':
       return { type: 'footnoteReference', identifier: attrs['identifier'], label: attrs['label'] }
     case 'raw_inline':

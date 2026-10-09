@@ -5,6 +5,7 @@ import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
 import remarkStringify, { type Options as StringifyOptions } from 'remark-stringify'
 import { unified } from 'unified'
+import { citationHandler, remarkCitations } from './citations'
 
 /** Serialization rules applied to every document: the "controlled normalization". */
 export const STRINGIFY_OPTIONS: StringifyOptions = {
@@ -17,6 +18,7 @@ export const STRINGIFY_OPTIONS: StringifyOptions = {
   listItemIndent: 'one',
   incrementListMarker: true,
   setext: false,
+  handlers: { citation: citationHandler } as StringifyOptions['handlers'],
 }
 
 const parser = unified()
@@ -24,6 +26,7 @@ const parser = unified()
   .use(remarkGfm)
   .use(remarkMath)
   .use(remarkFrontmatter, ['yaml'])
+  .use(remarkCitations)
 
 const serializer = unified()
   .use(remarkStringify, STRINGIFY_OPTIONS)

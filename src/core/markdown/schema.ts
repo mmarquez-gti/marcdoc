@@ -303,6 +303,24 @@ export const schema = new Schema({
         `[${node.attrs['label'] ?? node.attrs['identifier']}]`,
       ],
     },
+    citation: {
+      group: 'inline',
+      inline: true,
+      atom: true,
+      attrs: { value: {} },
+      parseDOM: [
+        {
+          tag: 'span.citation',
+          priority: 60,
+          getAttrs: (dom) => ({ value: stringAttr(dom, 'data-value') ?? dom.textContent ?? '' }),
+        },
+      ],
+      toDOM: (node): DOMOutputSpec => [
+        'span',
+        { class: 'citation', 'data-value': node.attrs['value'], title: 'Citation' },
+        node.attrs['value'],
+      ],
+    },
     raw_inline: {
       group: 'inline',
       inline: true,
