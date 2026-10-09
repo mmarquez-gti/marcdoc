@@ -4,6 +4,15 @@ All notable changes to MarcDoc are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-10-09
+
+### Fixed
+
+- Word export failed with "Style "TableNormal" is used but defined neither in the template nor
+  by Pandoc" when the template had no table style of its own and was made in a Word language
+  other than English. Inherited styles are now found by their built-in name.
+- Copied table styles no longer become a second default table style in the template.
+
 ## [0.1.0] - 2026-10-09
 
 First public release. Linux only (AppImage and .deb).
@@ -39,4 +48,5 @@ First public release. Linux only (AppImage and .deb).
 - Word output has been validated with the Open XML SDK and LibreOffice; the manual review in
   Microsoft Word is still pending (see `docs/validation/word-online-checklist.md`).
 
+[0.1.1]: https://github.com/mmarquez-gti/marcdoc/releases/tag/v0.1.1
 [0.1.0]: https://github.com/mmarquez-gti/marcdoc/releases/tag/v0.1.0

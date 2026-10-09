@@ -1,6 +1,6 @@
 {
   "name": "marcdoc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Markdown editor with synchronized WYSIWYG and source views, and Word-template-aware export.",
   "license": "MIT",
   "author": {
