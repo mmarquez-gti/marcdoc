@@ -10,10 +10,16 @@ export interface LaunchedApp {
 
 /** Launches the built app (run `npx electron-vite build` first). */
 export async function launchApp(
-  options: { readonly env?: Record<string, string> } = {},
+  options: {
+    readonly env?: Record<string, string>
+    /** Packaged executable to test instead of the development build. */
+    readonly executablePath?: string
+  } = {},
 ): Promise<LaunchedApp> {
   const env = { ...(process.env as Record<string, string>), ...options.env }
-  const app = await electron.launch({ args: [ROOT], cwd: ROOT, env })
+  const app = options.executablePath
+    ? await electron.launch({ executablePath: options.executablePath, args: [], env })
+    : await electron.launch({ args: [ROOT], cwd: ROOT, env })
   const page = await app.firstWindow()
   await page.waitForSelector('.app')
   return { app, page }

@@ -16,6 +16,8 @@
     "tests/unit/**/*",
     "tests/e2e/**/*",
     "tests/integration/**/*",
+    "tests/packaged/**/*",
+    "playwright.packaged.config.ts",
     "vitest.integration.config.ts",
     "scripts/**/*.ts",
     "playwright.config.ts"
