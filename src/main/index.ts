@@ -46,13 +46,25 @@ function createMainWindow(i18n: LocaleController): BrowserWindow {
   const exporter = new ExportService(resourcesDir())
   const templates = new TemplateService(join(resourcesDir(), 'templates/docx'))
   const latexTemplates = new LatexTemplateService(join(resourcesDir(), 'templates/latex'))
-  registerIpcHandlers(window, { files, assets, exporter, templates, latexTemplates }, state, i18n)
+  const disposeIpc = registerIpcHandlers(
+    window,
+    { files, assets, exporter, templates, latexTemplates },
+    state,
+    i18n,
+  )
   const updateMenu = () =>
     Menu.setApplicationMenu(
       buildApplicationMenu(window, i18n.t, i18n.locale, (locale) => void i18n.set(locale)),
     )
-  i18n.onChange(updateMenu)
+  const stopMenuUpdates = i18n.onChange(updateMenu)
   updateMenu()
+
+  // On macOS the app outlives its window; a new window registers everything again.
+  window.on('closed', () => {
+    disposeIpc()
+    stopMenuUpdates()
+    protocol.unhandle(ASSET_PROTOCOL)
+  })
 
   window.once('ready-to-show', () => window.show())
 
@@ -97,8 +109,13 @@ void app.whenReady().then(async () => {
     process.env['MARCDOC_LOCALE'],
   )
   createMainWindow(i18n)
+  // macOS convention: clicking the Dock icon with no window open creates one.
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow(i18n)
+  })
 })
 
+// macOS convention: closing the last window keeps the app running.
 app.on('window-all-closed', () => {
-  app.quit()
+  if (process.platform !== 'darwin') app.quit()
 })

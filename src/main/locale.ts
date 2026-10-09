@@ -40,7 +40,12 @@ export class LocaleController {
     this.listeners.forEach((listener) => listener(locale))
   }
 
-  onChange(listener: (locale: Locale) => void): void {
+  /** Subscribes to language changes; returns an unsubscribe function. */
+  onChange(listener: (locale: Locale) => void): () => void {
     this.listeners.push(listener)
+    return () => {
+      const index = this.listeners.indexOf(listener)
+      if (index !== -1) this.listeners.splice(index, 1)
+    }
   }
 }

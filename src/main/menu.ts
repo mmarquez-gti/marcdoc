@@ -12,7 +12,10 @@ export function buildApplicationMenu(
   const send = (command: MenuCommand) => () =>
     window.webContents.send(IpcChannel.MenuCommand, command)
 
+  const isMac = process.platform === 'darwin'
   const template: MenuItemConstructorOptions[] = [
+    // macOS puts About, Hide and Quit in an application menu named after the app.
+    ...(isMac ? [{ role: 'appMenu' } as MenuItemConstructorOptions] : []),
     {
       label: t('menu.file'),
       submenu: [
@@ -40,8 +43,7 @@ export function buildApplicationMenu(
             click: send(`export-${format}`),
           })),
         },
-        { type: 'separator' },
-        { role: 'quit' },
+        ...(isMac ? [] : [{ type: 'separator' } as const, { role: 'quit' } as const]),
       ],
     },
     { role: 'editMenu', label: t('menu.edit') },

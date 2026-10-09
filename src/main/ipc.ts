@@ -11,6 +11,8 @@ import { detectToolchain } from './services/toolchainDetector'
 import type { LocaleController } from './locale'
 import { UserError } from './userError'
 
+type IpcListener = Parameters<typeof ipcMain.on>[1]
+
 export interface WindowState {
   isDirty: boolean
 }
@@ -28,7 +30,11 @@ export function registerIpcHandlers(
   { files, assets, exporter, templates, latexTemplates }: Services,
   state: WindowState,
   i18n: LocaleController,
-): void {
+): () => void {
+  // Channels registered here, removed when the window closes (macOS keeps the app running and
+  // creates a new window, and Electron refuses a second handler for a channel).
+  const channels: string[] = []
+  const listeners: [string, IpcListener][] = []
   const markdownFilters = () => [
     { name: i18n.t('dialog.markdownFiles'), extensions: ['md', 'markdown'] },
     { name: i18n.t('dialog.allFiles'), extensions: ['*'] },
@@ -39,6 +45,7 @@ export function registerIpcHandlers(
     channel: string,
     handler: (event: IpcMainInvokeEvent, ...args: Args) => Result | Promise<Result>,
   ): void => {
+    channels.push(channel)
     ipcMain.handle(channel, async (event, ...args) => {
       try {
         return await handler(event, ...(args as Args))
@@ -49,10 +56,17 @@ export function registerIpcHandlers(
     })
   }
 
-  ipcMain.on(IpcChannel.GetLocale, (event) => {
+  const on = (channel: string, listener: IpcListener) => {
+    listeners.push([channel, listener])
+    ipcMain.on(channel, listener)
+  }
+
+  on(IpcChannel.GetLocale, (event) => {
     event.returnValue = i18n.locale
   })
-  i18n.onChange((locale) => window.webContents.send(IpcChannel.LocaleChanged, locale))
+  const stopLocaleUpdates = i18n.onChange((locale) =>
+    window.webContents.send(IpcChannel.LocaleChanged, locale),
+  )
 
   handle(IpcChannel.OpenDocument, async () => {
     const result = await dialog.showOpenDialog(window, {
@@ -75,7 +89,7 @@ export function registerIpcHandlers(
     return result.canceled || !result.filePath ? null : files.saveAs(result.filePath, content)
   })
 
-  ipcMain.on(IpcChannel.SetDirty, (_event, isDirty: boolean) => {
+  on(IpcChannel.SetDirty, (_event, isDirty: boolean) => {
     state.isDirty = isDirty
   })
 
@@ -130,4 +144,10 @@ export function registerIpcHandlers(
   handle(IpcChannel.ImportAsset, (_event, fileName: string, bytes: Uint8Array) =>
     assets.import(fileName, bytes),
   )
+
+  return () => {
+    stopLocaleUpdates()
+    channels.forEach((channel) => ipcMain.removeHandler(channel))
+    listeners.forEach(([channel, listener]) => ipcMain.removeListener(channel, listener))
+  }
 }
