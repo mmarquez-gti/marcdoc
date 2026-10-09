@@ -88,20 +88,6 @@ describe.each(TEMPLATES)('Word export with the %s', (label, templatePath) => {
   })
 })
 
-describe('Open XML SDK validation (layer a)', () => {
-  it('finds no schema errors in any exported document', ({ skip }) => {
-    if (!dockerAvailable()) skip('Docker is not available to run the Open XML SDK validator')
-    const report = execFileSync(join(ROOT, 'scripts/validate-docx.sh'), ['--json', ...outputs], {
-      encoding: 'utf8',
-      maxBuffer: 50 * 1024 * 1024,
-    })
-    const invalid = (
-      JSON.parse(report) as { file: string; valid: boolean; errors: unknown[] }[]
-    ).filter((result) => !result.valid)
-    expect(invalid).toEqual([])
-  })
-})
-
 describe('title block', () => {
   async function documentText(templatePath: string | null): Promise<string> {
     const outputPath = join(workDir, `title-${templatePath ? 'cover' : 'plain'}.docx`)
@@ -232,5 +218,57 @@ describe('citations', () => {
     expect(text).toContain('Markdown in Practice')
     expect(warnings.some((warning) => warning.includes('citation missing not found'))).toBe(true)
     expect(xml).toContain('w:val="Bibliography"')
+  })
+})
+
+describe('cross-references', () => {
+  it('numbers figures and tables and links references to bookmarks Word accepts', async () => {
+    const markdown = `---\nlang: es-ES\n---\n\n${readFileSync(join(workDir, '12-crossref.md'), 'utf8')}`
+    const outputPath = join(workDir, 'crossref.docx')
+    const exportDir = mkdtempSync(join(tmpdir(), 'marcdoc-docx-job-'))
+    try {
+      await exportDocx({
+        markdown,
+        invocation: {
+          resourcePath: workDir,
+          outputPath,
+          fallbackTitle: 'x',
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
+        templatePath: join(RESOURCES, 'templates/docx/sample-es.dotx'),
+        resourcesDir: RESOURCES,
+        workDir: exportDir,
+      })
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true })
+    }
+    outputs.push(outputPath)
+    const bytes = readFileSync(outputPath)
+    const xml = await (await JSZip.loadAsync(bytes)).file('word/document.xml')!.async('string')
+    const text = Array.from(
+      xml.matchAll(/<w:t(?: [^>]*)?>([^<]*)<\/w:t>/g),
+      (match) => match[1],
+    ).join('')
+    expect(text).toContain('Figura 1: Test results')
+    expect(text).toContain('Tabla 1: Sales per month')
+    expect(text).toContain('As figura 1 shows and tabla 1 summarizes.')
+    expect(xml).toContain('w:anchor="fig_results"')
+    expect(xml).toMatch(/<w:bookmarkStart w:id="\d+" w:name="fig_results"/)
+    const errors = (await lintDocx(bytes)).filter((issue) => issue.severity === 'error')
+    expect(errors).toEqual([])
+  })
+})
+
+describe('Open XML SDK validation (layer a)', () => {
+  it('finds no schema errors in any exported document', ({ skip }) => {
+    if (!dockerAvailable()) skip('Docker is not available to run the Open XML SDK validator')
+    const report = execFileSync(join(ROOT, 'scripts/validate-docx.sh'), ['--json', ...outputs], {
+      encoding: 'utf8',
+      maxBuffer: 50 * 1024 * 1024,
+    })
+    const invalid = (
+      JSON.parse(report) as { file: string; valid: boolean; errors: unknown[] }[]
+    ).filter((result) => !result.valid)
+    expect(invalid).toEqual([])
   })
 })
