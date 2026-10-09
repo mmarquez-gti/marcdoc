@@ -286,3 +286,12 @@ Preservación del formato original del .md, i18n, otros sistemas operativos.
 - Las plantillas de ejemplo las crearé yo con LibreOffice o generando el XML directamente. Cuando haya una plantilla real hecha en Word, se añadirá al conjunto de pruebas.
 - El linter considerará «exclusivo de LibreOffice» una lista concreta de elementos y atributos que se definirá en H2.2.
 - Pendiente de tu aprobación: instalar las fuentes Carlito y Caladea (`fonts-crosextra-carlito`, `fonts-crosextra-caladea`) y descargar la imagen Docker del SDK de .NET (unos 700 MB, cifra no verificada).
+
+## 9. Registro de avance
+
+| Fecha | Hito | Resultado |
+|---|---|---|
+| 09/10/2026 | H0.1 | Scaffold de Electron + React + TS; typecheck, lint, tests y build en verde |
+| 09/10/2026 | H0.2 | ADR-0001: ProseMirror directo + remark (10/10 del corpus sin pérdida). MVP desplazado a ≈ 16/05/2027 |
+| 09/10/2026 | H0.3 | ADR-0002: fusión sobre la plantilla + normalizador OOXML; 0 errores en el Open XML SDK. Pendiente: revisión en Word Online |
+| 09/10/2026 | **Fase 0 completada** | Siguiente: H1.1 (shell de la app, abrir/guardar, detección de Pandoc/LaTeX) |
