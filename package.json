@@ -3,6 +3,27 @@
   "version": "0.1.0",
   "description": "Markdown editor with synchronized WYSIWYG and source views, and Word-template-aware export.",
   "license": "MIT",
+  "author": {
+    "name": "mmarquez-gti",
+    "email": "247151421+mmarquez-gti@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/mmarquez-gti/marcdoc",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mmarquez-gti/marcdoc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mmarquez-gti/marcdoc/issues"
+  },
+  "keywords": [
+    "markdown",
+    "editor",
+    "wysiwyg",
+    "docx",
+    "word",
+    "pandoc",
+    "electron"
+  ],
   "private": true,
   "main": "./out/main/index.js",
   "engines": {
@@ -82,10 +103,5 @@
   },
   "overrides": {
     "katex": "$katex"
-  },
-  "author": {
-    "name": "mmarquez-gti",
-    "email": "247151421+mmarquez-gti@users.noreply.github.com"
-  },
-  "homepage": "https://github.com/mmarquez-gti/marcdoc"
+  }
 }

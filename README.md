@@ -1,93 +1,155 @@
 # MarcDoc
 
-Desktop Markdown editor with two synchronized views (WYSIWYG and source) and export to PDF,
-LaTeX and Word (.docx), including export that follows the styles of a Word template.
+A Markdown editor for people who write documents, not code. Edit a `.md` file as you would in
+a word processor, or as plain Markdown, side by side, and export it to Word following your own
+template, to PDF or to LaTeX.
 
-> Status: MVP feature-complete (phases 0–2), pending the manual review in Word. See [PLAN.md](PLAN.md).
+![MarcDoc editing a report: document view on the left, Markdown source on the right](docs/images/editor-light.png)
+
+## Download
+
+Get the latest version from the [Releases page](../../releases/latest):
+
+| File                          | For                                            |
+| ----------------------------- | ---------------------------------------------- |
+| `MarcDoc-<version>.AppImage`  | Any recent Linux distribution, no installation |
+| `marcdoc_<version>_amd64.deb` | Debian, Ubuntu and derivatives                 |
+| `SHA256SUMS`                  | Checksums to verify the downloads              |
+
+Windows and macOS builds are not published yet: they are configured but untested (see
+[docs/adr/0005-platform-support.md](docs/adr/0005-platform-support.md)).
+
+### Install
+
+**AppImage**
+
+```sh
+chmod +x MarcDoc-*.AppImage
+./MarcDoc-*.AppImage
+```
+
+It needs FUSE 2 (`sudo apt install libfuse2t64` on Ubuntu 24.04, `libfuse2` on older versions).
+
+**.deb**
+
+```sh
+sudo apt install ./marcdoc_*_amd64.deb
+```
+
+This also installs Pandoc.
+
+**Verify a download** (optional)
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS
+```
+
+### Requirements for export
+
+Editing works on its own. Exporting uses tools installed on your system, which MarcDoc detects
+and tells you about if they are missing:
+
+- [Pandoc](https://pandoc.org/installing.html) 3.1 or later, for every export.
+- For PDF via LaTeX: TeX Live with LuaLaTeX and the packages Pandoc's template uses:
+  `sudo apt install texlive-luatex texlive-latex-extra`.
 
 ## Features
 
-- Two synchronized views of the same file: a word-processor-like document view and a
-  Markdown source view with syntax highlighting. Edits in either view appear in the other;
-  scrolling one scrolls the other. Show both, or only one (`Ctrl+1`, `Ctrl+2`, `Ctrl+3`).
-- GitHub Flavored Markdown (tables, task lists, strikethrough), math (`$…$`, `$$…$$`,
-  rendered with KaTeX), footnotes and YAML front matter.
-- Nothing is lost: constructs the document view does not model (e.g. raw HTML) are kept
-  verbatim and edited in the source view. Opening a file never rewrites it; editing in the
-  document view rewrites only the blocks you edit, the rest keeps its original formatting.
-- Images use paths relative to the document. Pasted or dropped images are copied into an
-  `assets/` folder next to it (save the document first).
-- Citations `[@key, p. 3]` formatted by Pandoc's citeproc from the `bibliography` (BibTeX,
-  CSL JSON…) and `csl` style named in the front matter. See `docs/adr/0003-citations.md`.
-- Numbered figures and tables with cross-references in pandoc-crossref style:
-  `![Caption](plot.png){#fig:id}`, `Table: Caption {#tbl:id}` and `[@fig:id]`. See
-  `docs/adr/0004-cross-references.md`.
-- Export (`Ctrl+E`) to Word (.docx), PDF via LaTeX, PDF via HTML and LaTeX (.tex). PDF and
-  .tex can use your own Pandoc LaTeX template; classes and packages next to it are found.
-- Word export follows a template (.docx or .dotx): its styles, cover page, headers and
-  footers, sections and list numbering. A `<template>.marcdoc.json` file next to the
-  template maps Markdown elements to the template's style IDs (see
-  `resources/templates/docx/*.marcdoc.json`); without it, Word's built-in styles are used.
-  Templates in any Word UI language work. Every .docx is normalized to the OOXML schema and
-  checked by a linter; see `docs/adr/0002-docx-pipeline.md` and
-  `docs/validation/word-online-checklist.md`.
+- **Two synchronized views.** A document view that looks like a page and a Markdown source view
+  with syntax highlighting. Edits and scrolling follow each other. Show both, or one
+  (`Ctrl+1`, `Ctrl+2`, `Ctrl+3`).
+- **Your formatting is kept.** Editing in the document view rewrites only the paragraphs you
+  change; the rest of the file stays exactly as you wrote it. Anything the document view does not
+  understand, such as raw HTML, is preserved.
+- **Rich Markdown.** GitHub Flavored Markdown (tables, task lists, strikethrough), math with
+  `$…$`, footnotes, YAML front matter, citations `[@key, p. 3]` and numbered figures and tables
+  with cross-references (`{#fig:id}`, `[@fig:id]`).
+- **Images.** Paste or drop an image and it is copied into an `assets/` folder next to the
+  document.
+- **Word export with your template.** Choose a `.docx` or `.dotx` template and the document takes
+  its styles, cover page, headers, footers and numbering. A visual editor maps each Markdown
+  element (headings, quotes, tables, code…) to a style of the template. The output is normalized
+  to the OOXML standard and validated with Microsoft's Open XML SDK; a review in Microsoft Word
+  itself is still pending.
+- **PDF and LaTeX.** PDF through LuaLaTeX, optionally with your own Pandoc LaTeX template (for
+  example a university or journal one), or through HTML; or the `.tex` source.
+- **Bibliography.** Citations are formatted with Pandoc's citeproc from the `bibliography`
+  (BibTeX, CSL JSON…) and `csl` style named in the front matter.
+- **English and Spanish** interface, light and dark themes.
 
-## Document view shortcuts
+![The export dialog with the Word, PDF and LaTeX options](docs/images/export-dialog.png)
 
-| Shortcut                                                                      | Action                                                 |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `Ctrl+B` / `Ctrl+I` / `` Ctrl+` `` / `Ctrl+Shift+X`                           | Bold / italic / inline code / strikethrough            |
-| `Ctrl+Alt+1`…`6`, `Ctrl+Alt+0`                                                | Heading 1–6, normal text                               |
-| `Ctrl+Shift+8` / `Ctrl+Shift+7`                                               | Bulleted / numbered list                               |
-| `Tab` / `Shift+Tab`                                                           | Indent / outdent list item; next / previous table cell |
-| `Shift+Enter`                                                                 | Line break                                             |
-| Markdown syntax (`# `, `- `, `1. `, `> `, ` ``` `, `**bold**`, `$x$`, `[ ] `) | Converted while typing                                 |
+## Quick start
 
-## Requirements
+1. **Open** a `.md` file, or start typing in the empty document.
+2. Write in either view. In the document view, Markdown shortcuts work as you type: `# ` makes a
+   heading, `- ` a list, `**bold**` bold text, `$x^2$` a formula.
+3. **Save** with `Ctrl+S`.
+4. **Export** with `Ctrl+E`: pick a format and, for Word, a template.
 
-- Linux (Ubuntu). Windows and macOS packages can be built but have not been tested on those
-  systems; see `docs/adr/0005-platform-support.md`.
-- Node.js >= 22.12
-- External tools used for export (detected at runtime, not bundled):
-  - [Pandoc](https://pandoc.org/) >= 3.1
-  - For PDF via LaTeX: TeX Live with LuaLaTeX and the packages Pandoc's template needs
-    (`sudo apt install texlive-luatex texlive-latex-extra`)
-  - For development only: LibreOffice and `pdftoppm` (visual regression tests)
-- For development only: Docker, used to run the Open XML SDK validator in `tools/ooxml-validator`
+To cite, add the bibliography to the front matter and cite by key:
 
-## Installation
+```markdown
+---
+title: My report
+bibliography: references.bib
+csl: apa.csl
+lang: en-GB
+---
 
-### From a package
+As shown before [@doe2020, p. 3].
+```
 
-Build the packages with `npm run package`; they are written to `dist/`:
+### Document view shortcuts
 
-- **AppImage:** `chmod +x MarcDoc-<version>.AppImage` and run it. Requires FUSE 2
-  (`libfuse2t64` on Ubuntu 24.04, `libfuse2` before).
-- **Debian/Ubuntu:** `sudo apt install ./marcdoc_<version>_amd64.deb`. Installs Pandoc as a
-  dependency and recommends the LaTeX packages for PDF via LaTeX.
+| Shortcut                                            | Action                                                 |
+| --------------------------------------------------- | ------------------------------------------------------ |
+| `Ctrl+B` / `Ctrl+I` / `` Ctrl+` `` / `Ctrl+Shift+X` | Bold / italic / inline code / strikethrough            |
+| `Ctrl+Alt+1`…`6`, `Ctrl+Alt+0`                      | Heading 1–6, normal text                               |
+| `Ctrl+Shift+8` / `Ctrl+Shift+7`                     | Bulleted / numbered list                               |
+| `Tab` / `Shift+Tab`                                 | Indent / outdent list item; next / previous table cell |
+| `Shift+Enter`                                       | Line break                                             |
 
-### From source
+## Documentation
+
+- [docs/adr/](docs/adr/) — design decisions: editor, Word export pipeline, citations,
+  cross-references, platform support.
+- [docs/validation/word-online-checklist.md](docs/validation/word-online-checklist.md) — how
+  Word output is reviewed.
+- [CHANGELOG.md](CHANGELOG.md) — what changed in each version.
+- [PLAN.md](PLAN.md) — the project plan and progress log (in Spanish).
+
+## Development
+
+Requires Node.js 22.12 or later. Exports in development need the same tools as above.
 
 ```sh
 npm install
 npm run dev
 ```
 
-## Usage
+| Command                           | Description                                                                                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                     | Start the app in development mode                                                                                                                     |
+| `npm run build`                   | Type-check and build into `out/`                                                                                                                      |
+| `npm test`                        | Unit tests                                                                                                                                            |
+| `npm run test:e2e`                | End-to-end tests against the Electron app                                                                                                             |
+| `npm run test:integration`        | Export the test corpus to Word with every template and validate it (needs Pandoc; Docker for the Open XML SDK; LibreOffice for the visual comparison) |
+| `npm run package`                 | Build the AppImage and .deb into `dist/`                                                                                                              |
+| `npm run test:packaged`           | Smoke test of the packaged app                                                                                                                        |
+| `npm run validation:samples`      | Export review documents for the Word checklist                                                                                                        |
+| `npm run lint` / `npm run format` | Lint / format the code                                                                                                                                |
 
-| Command                                | Description                                                                                                  |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `npm run dev`                          | Start the app in development mode                                                                            |
-| `npm run build`                        | Type-check and build into `out/`                                                                             |
-| `npm test`                             | Run unit tests                                                                                               |
-| `npm run test:e2e`                     | Build and run end-to-end tests against the Electron app                                                      |
-| `npm run test:integration`             | Export the corpus to Word with every template and validate it (requires Pandoc; Docker for the Open XML SDK) |
-| `npm run validation:samples`           | Export review documents for the Word Online checklist into `.work/validation/`                               |
-| `npm run validate:docx -- <file.docx>` | Validate a .docx with the Open XML SDK (requires Docker)                                                     |
-| `npm run package`                      | Build the AppImage and .deb into `dist/`                                                                     |
-| `npm run test:packaged`                | Build the unpacked app and run a smoke test against it                                                       |
-| `npm run lint`                         | Lint the code                                                                                                |
-| `npm run format`                       | Format the code                                                                                              |
+### Releasing
+
+Releases are built by GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml)).
+To publish version `x.y.z`:
+
+1. Set `"version": "x.y.z"` in `package.json` and add a `## [x.y.z]` section to `CHANGELOG.md`.
+2. Commit, then tag and push: `git tag vx.y.z && git push origin vx.y.z`.
+
+The workflow checks the code, builds the AppImage and .deb, and creates the release with their
+checksums and the changelog section as notes.
 
 ## License
 
