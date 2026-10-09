@@ -5,7 +5,7 @@ import { Slice } from 'prosemirror-model'
 import { EditorState, type Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
-import { createIncrementalSerializer, markdownToDoc } from '../../../../core/markdown'
+import { BlockSources, createIncrementalSerializer, markdownToDoc } from '../../../../core/markdown'
 import { diffTopLevelBlocks } from '../../../../core/sync/blockDiff'
 import { FormatToolbar } from './FormatToolbar'
 import { buildInputRules } from './inputRules'
@@ -25,15 +25,19 @@ const SOURCE_SYNC_DELAY_MS = 150
  * Applies new Markdown from the source view by replacing only the top-level blocks that changed,
  * so the other blocks keep their DOM, rendering and any selection inside them.
  */
-function applyExternalMarkdown(view: EditorView, markdown: string): void {
-  const change = diffTopLevelBlocks(view.state.doc, markdownToDoc(markdown))
-  if (!change) return
-  view.dispatch(
-    view.state.tr
-      .replace(change.from, change.to, new Slice(change.content, 0, 0))
-      .setMeta(EXTERNAL_UPDATE, true)
-      .setMeta('addToHistory', false),
-  )
+function applyExternalMarkdown(view: EditorView, markdown: string, sources: BlockSources): void {
+  const parsed = markdownToDoc(markdown, sources)
+  const change = diffTopLevelBlocks(view.state.doc, parsed)
+  if (change) {
+    view.dispatch(
+      view.state.tr
+        .replace(change.from, change.to, new Slice(change.content, 0, 0))
+        .setMeta(EXTERNAL_UPDATE, true)
+        .setMeta('addToHistory', false),
+    )
+  }
+  // Blocks the diff kept may have been reformatted in the source (e.g. `*a*` to `_a_`).
+  sources.adopt(parsed, view.state.doc)
 }
 
 /** Position at the top of the visible area: a Markdown block index plus how far into it (0..1). */
@@ -58,9 +62,9 @@ interface WysiwygViewProps {
   readonly onError: (message: string) => void
 }
 
-function createState(markdown: string): EditorState {
+function createState(markdown: string, sources: BlockSources): EditorState {
   return EditorState.create({
-    doc: markdownToDoc(markdown),
+    doc: markdownToDoc(markdown, sources),
     plugins: [
       buildInputRules(),
       // Table keys (Tab, Enter) take precedence over list and base keys inside tables.
@@ -82,6 +86,7 @@ export function WysiwygView({ documentKey, value, onChange, onError, ref }: Wysi
   const lastMarkdownRef = useRef(value)
   // Source edit waiting for the debounce; flushed before the user interacts with this view.
   const pendingRef = useRef<string | null>(null)
+  const sourcesRef = useRef(new BlockSources())
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorState, setEditorState] = useState<EditorState | null>(null)
   // Kept in state as well, because the toolbar renders from it.
@@ -102,16 +107,19 @@ export function WysiwygView({ documentKey, value, onChange, onError, ref }: Wysi
     const markdown = pendingRef.current
     const view = viewRef.current
     cancelPending()
-    if (markdown !== null && view) applyExternalMarkdown(view, markdown)
+    if (markdown !== null && view) applyExternalMarkdown(view, markdown, sourcesRef.current)
     // Never consume the event: ProseMirror must still handle it.
     return false
   }
 
   useEffect(() => {
     // Re-serializes only the blocks that changed since the previous keystroke.
-    const serialize = createIncrementalSerializer()
+    // Original text of each block, so unedited blocks keep their formatting (PLAN.md H4.1).
+    const sources = new BlockSources()
+    sourcesRef.current = sources
+    const serialize = createIncrementalSerializer(sources)
     const view = new EditorView(hostRef.current!, {
-      state: createState(value),
+      state: createState(value, sources),
       attributes: { 'aria-label': 'Document', class: 'wysiwyg-content', spellcheck: 'true' },
       nodeViews: {
         list_item: (node, nodeView, getPos) => new ListItemView(node, nodeView, getPos),
