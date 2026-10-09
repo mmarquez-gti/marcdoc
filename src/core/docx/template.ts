@@ -11,7 +11,17 @@ const MAIN_DOCUMENT_CT = `${WML_CT}.document.main+xml`
  * type of its main part, which Word requires to be the document type in a .docx.
  */
 export async function loadTemplate(bytes: Uint8Array): Promise<Package> {
-  const template = await Package.load(bytes)
+  let template: Package
+  try {
+    template = await Package.load(bytes)
+  } catch (error) {
+    throw new Error(
+      'The template is not a Word file (.docx or .dotx): it cannot be opened as a package.',
+      {
+        cause: error,
+      },
+    )
+  }
   if (!template.has('word/document.xml') || !template.has('word/styles.xml')) {
     throw new Error(
       'This file is not a Word document or template (word/document.xml or styles.xml is missing).',

@@ -37,8 +37,15 @@ export function runPandoc(
     const stderr: Buffer[] = []
     child.stdout.on('data', (chunk: Buffer) => stdout.push(chunk))
     child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk))
-    child.on('error', (error) =>
-      reject(new PandocError(`Could not run Pandoc: ${error.message}`, '')),
+    child.on('error', (error: NodeJS.ErrnoException) =>
+      reject(
+        new PandocError(
+          error.code === 'ENOENT'
+            ? 'Pandoc is not installed or not on the PATH. Install it from https://pandoc.org/installing.html.'
+            : `Could not run Pandoc: ${error.message}`,
+          '',
+        ),
+      ),
     )
     child.on('close', (code, signal) => {
       const errorText = Buffer.concat(stderr).toString('utf8')

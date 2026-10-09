@@ -5,6 +5,7 @@ import { IpcChannel, type ExportRequest } from '../shared/ipc'
 import type { ExportService } from './export/exportService'
 import type { AssetService } from './services/assetService'
 import type { FileService } from './services/fileService'
+import type { TemplateService } from './services/templateService'
 import { detectToolchain } from './services/toolchainDetector'
 
 const MARKDOWN_FILTERS = [
@@ -20,11 +21,12 @@ export interface Services {
   readonly files: FileService
   readonly assets: AssetService
   readonly exporter: ExportService
+  readonly templates: TemplateService
 }
 
 export function registerIpcHandlers(
   window: BrowserWindow,
-  { files, assets, exporter }: Services,
+  { files, assets, exporter, templates }: Services,
   state: WindowState,
 ): void {
   ipcMain.handle(IpcChannel.OpenDocument, async () => {
@@ -60,6 +62,7 @@ export function registerIpcHandlers(
   ipcMain.handle(IpcChannel.ExportDocument, async (_event, request: ExportRequest) => {
     const format = EXPORT_FORMATS[request.format]
     if (!format) throw new Error(`Unknown export format: ${String(request.format)}`)
+    if (request.templatePath) await templates.assertAllowed(request.templatePath)
     const defaultName = defaultOutputName(request.documentPath, request.format)
     const result = await dialog.showSaveDialog(window, {
       defaultPath: request.documentPath
@@ -69,6 +72,17 @@ export function registerIpcHandlers(
     })
     if (result.canceled || !result.filePath) return null
     return exporter.export({ ...request, outputPath: result.filePath })
+  })
+
+  ipcMain.handle(IpcChannel.ListTemplates, () => templates.bundled())
+
+  ipcMain.handle(IpcChannel.ChooseTemplate, async () => {
+    const result = await dialog.showOpenDialog(window, {
+      properties: ['openFile'],
+      filters: [{ name: 'Word templates', extensions: ['dotx', 'docx'] }],
+    })
+    const path = result.filePaths[0]
+    return result.canceled || !path ? null : templates.choose(path)
   })
 
   ipcMain.handle(IpcChannel.ImportAsset, (_event, fileName: string, bytes: Uint8Array) =>

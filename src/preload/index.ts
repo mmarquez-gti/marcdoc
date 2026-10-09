@@ -8,6 +8,8 @@ const api: MarcDocApi = {
     ipcRenderer.invoke(IpcChannel.SaveDocumentAs, content, currentPath),
   setDirty: (isDirty) => ipcRenderer.send(IpcChannel.SetDirty, isDirty),
   getToolchainStatus: () => ipcRenderer.invoke(IpcChannel.GetToolchainStatus),
+  listTemplates: () => ipcRenderer.invoke(IpcChannel.ListTemplates),
+  chooseTemplate: () => ipcRenderer.invoke(IpcChannel.ChooseTemplate),
   exportDocument: (request) => ipcRenderer.invoke(IpcChannel.ExportDocument, request),
   importAsset: (fileName, bytes) => ipcRenderer.invoke(IpcChannel.ImportAsset, fileName, bytes),
   onMenuCommand: (listener) => {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fileNameOf } from '../../core'
 import type { ViewMode } from '../../shared/ipc'
+import { ExportDialog } from './components/ExportDialog'
 import { ExportStatusBanner } from './components/ExportStatusBanner'
 import { ToolchainBanner } from './components/ToolchainBanner'
 import { Toolbar } from './components/Toolbar'
@@ -36,11 +37,22 @@ export function App() {
         onOpen={() => void document.open()}
         onSave={() => void document.save()}
         onSaveAs={() => void document.saveAs()}
+        onExport={exporter.openDialog}
+        exportBusy={exporter.status.kind === 'running'}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
       />
       <ToolchainBanner />
       <ExportStatusBanner status={exporter.status} onDismiss={exporter.dismiss} />
+      {exporter.dialogOpen && (
+        <ExportDialog
+          initialFormat={exporter.lastFormat}
+          template={exporter.template}
+          onTemplateChange={exporter.setTemplate}
+          onExport={(format) => void exporter.run(format)}
+          onClose={exporter.closeDialog}
+        />
+      )}
       {document.error && (
         <div className="banner banner-error" role="alert">
           <span>{document.error}</span>

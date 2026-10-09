@@ -20,8 +20,9 @@ export function buildApplicationMenu(window: BrowserWindow): Menu {
           click: send('save-as'),
         },
         { type: 'separator' },
+        { id: 'export', label: 'Export…', accelerator: 'CmdOrCtrl+E', click: send('export') },
         {
-          label: 'Export',
+          label: 'Export As',
           submenu: (Object.keys(EXPORT_FORMATS) as ExportFormat[]).map((format) => ({
             id: `export-${format}`,
             label: `${EXPORT_FORMATS[format].label}…`,

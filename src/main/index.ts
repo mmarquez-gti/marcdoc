@@ -7,6 +7,7 @@ import { ExportService } from './export/exportService'
 import { resourcesDir } from './export/resources'
 import { AssetService } from './services/assetService'
 import { FileService } from './services/fileService'
+import { TemplateService } from './services/templateService'
 
 const DEFAULT_WINDOW_WIDTH = 1280
 const DEFAULT_WINDOW_HEIGHT = 800
@@ -36,7 +37,8 @@ function createMainWindow(): BrowserWindow {
   const assets = new AssetService(() => files.currentPath)
   protocol.handle(ASSET_PROTOCOL, (request) => assets.serve(request.url))
   const exporter = new ExportService(resourcesDir())
-  registerIpcHandlers(window, { files, assets, exporter }, state)
+  const templates = new TemplateService(join(resourcesDir(), 'templates/docx'))
+  registerIpcHandlers(window, { files, assets, exporter, templates }, state)
   Menu.setApplicationMenu(buildApplicationMenu(window))
 
   window.once('ready-to-show', () => window.show())

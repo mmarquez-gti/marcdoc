@@ -14,6 +14,9 @@ interface ToolbarProps {
   readonly onOpen: () => void
   readonly onSave: () => void
   readonly onSaveAs: () => void
+  readonly onExport: () => void
+  /** An export is running; another one cannot start. */
+  readonly exportBusy: boolean
 }
 
 export function Toolbar({
@@ -22,6 +25,8 @@ export function Toolbar({
   onOpen,
   onSave,
   onSaveAs,
+  onExport,
+  exportBusy,
   viewMode,
   onViewModeChange,
 }: ToolbarProps) {
@@ -36,6 +41,9 @@ export function Toolbar({
         </button>
         <button type="button" onClick={onSaveAs} title="Save As (Ctrl+Shift+S)">
           Save As
+        </button>
+        <button type="button" onClick={onExport} disabled={exportBusy} title="Export (Ctrl+E)">
+          Export…
         </button>
       </div>
       <div className="toolbar-group view-switch" role="radiogroup" aria-label="View">

@@ -9,6 +9,8 @@ export const IpcChannel = {
   GetToolchainStatus: 'toolchain:status',
   ImportAsset: 'asset:import',
   ExportDocument: 'document:export',
+  ListTemplates: 'template:list',
+  ChooseTemplate: 'template:choose',
   MenuCommand: 'menu:command',
 } as const
 
@@ -17,7 +19,7 @@ import type { ExportFormat } from '../core/export/formats'
 export type ViewMode = 'split' | 'wysiwyg' | 'source'
 
 export type MenuCommand =
-  'open' | 'save' | 'save-as' | `view-${ViewMode}` | `export-${ExportFormat}`
+  'open' | 'save' | 'save-as' | 'export' | `view-${ViewMode}` | `export-${ExportFormat}`
 
 export interface ExportRequest {
   readonly format: ExportFormat
@@ -25,6 +27,13 @@ export interface ExportRequest {
   readonly documentPath: string | null
   /** Word template for .docx export; null or absent uses MarcDoc's default template. */
   readonly templatePath?: string | null
+}
+
+export interface TemplateInfo {
+  readonly path: string
+  readonly name: string
+  /** A `<template>.marcdoc.json` mapping exists; otherwise styles are matched by built-in names. */
+  readonly hasMappingFile: boolean
 }
 
 export interface ExportResult {
@@ -70,6 +79,10 @@ export interface MarcDocApi {
    * Markdown. Fails if the document has never been saved.
    */
   importAsset(fileName: string, bytes: Uint8Array): Promise<string>
+  /** Templates bundled with MarcDoc (other than the default one). */
+  listTemplates(): Promise<TemplateInfo[]>
+  /** Shows the open dialog for a Word template; resolves to null if the user cancels. */
+  chooseTemplate(): Promise<TemplateInfo | null>
   /** Asks where to save, then exports; resolves to null if the user cancels the dialog. */
   exportDocument(request: ExportRequest): Promise<ExportResult | null>
   /** Subscribes to menu commands; returns an unsubscribe function. */
