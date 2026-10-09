@@ -67,3 +67,12 @@ Detalles:
 - Imágenes: solo `png`, `jpeg`, `gif` y `svg`. SVG en Word necesita una imagen PNG alternativa para versiones antiguas; no se ha verificado.
 - El estilo `Normal` de la plantilla de ejemplo está justificado, y por eso las líneas que terminan en salto manual se estiran. Word hace lo mismo, así que se corregirá en la plantilla, no en el pipeline.
 - LibreOffice está instalado como snap y no puede leer ni escribir en `/tmp`. Los renderizados se hacen en `.work/`, que está excluido de git.
+
+## Revisión (09/10/2026, hito H2.2)
+
+- El código del spike vive ahora en `src/core/docx/` (puro: paquete, estilos, mapeo, partes, cuerpo, adaptador y linter). La E/S está en `src/main/export/docxExport.ts`. El spike se ha eliminado; el historial de git lo conserva.
+- **Plantilla por defecto.** La exportación sin plantilla usa `resources/templates/docx/marcdoc-default.docx` por el mismo adaptador, así que todo .docx pasa por la normalización y el linter.
+- **Bloque de título.** El filtro Lua que lo elimina solo se aplica si la plantilla tiene controles de contenido de portada que el mapeo rellena. Sin portada, el título de Pandoc se conserva.
+- **Plantilla sin marcador `{{body}}`.** El cuerpo se añade al final del contenido de la plantilla, en lugar de dar error.
+- **Plantilla sin archivo de mapeo.** El mapeo se deduce de los nombres de estilo integrados de Word (`defaultMapping`).
+- **Las plantillas de ejemplo** se generan con `scripts/templates/build-templates.ts` e incluyen la opción de compatibilidad `doNotExpandShiftReturn`, que corrige las líneas estiradas antes de un salto manual. Verificado en LibreOffice.
