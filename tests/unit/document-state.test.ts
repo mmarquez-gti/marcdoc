@@ -7,6 +7,12 @@ describe('documentReducer', () => {
     expect(isDirty(state)).toBe(false)
   })
 
+  it('starts a new generation each time a file is opened', () => {
+    const first = documentReducer(EMPTY_DOCUMENT, { type: 'opened', path: '/a.md', content: '' })
+    const second = documentReducer(first, { type: 'opened', path: '/a.md', content: '' })
+    expect(second.generation).toBe(first.generation + 1)
+  })
+
   it('becomes dirty after an edit', () => {
     const opened = documentReducer(EMPTY_DOCUMENT, {
       type: 'opened',

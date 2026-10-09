@@ -1,6 +1,7 @@
 import { fileNameOf } from '../../core'
 import { ToolchainBanner } from './components/ToolchainBanner'
 import { Toolbar } from './components/Toolbar'
+import { CodeView } from './editors/code/CodeView'
 import { useDocument } from './hooks/useDocument'
 
 export function App() {
@@ -25,12 +26,10 @@ export function App() {
         </div>
       )}
       <main className="editor-area">
-        <textarea
-          className="source-editor"
-          aria-label="Markdown source"
-          spellCheck={false}
+        <CodeView
+          documentKey={String(document.state.generation)}
           value={document.state.content}
-          onChange={(event) => document.edit(event.target.value)}
+          onChange={document.edit}
         />
       </main>
     </div>

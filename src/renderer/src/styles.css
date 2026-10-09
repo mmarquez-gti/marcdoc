@@ -74,12 +74,21 @@ body,
   display: flex;
 }
 
-.source-editor {
+.code-view {
   flex: 1;
-  border: none;
-  padding: 1rem;
-  font-family: ui-monospace, monospace;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.code-view .cm-editor {
+  height: 100%;
   font-size: 0.95rem;
-  resize: none;
+}
+
+.code-view .cm-editor.cm-focused {
   outline: none;
+}
+
+.code-view .cm-scroller {
+  font-family: ui-monospace, monospace;
 }
