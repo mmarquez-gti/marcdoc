@@ -63,6 +63,7 @@ export async function lintDocx(bytes: Uint8Array): Promise<LintIssue[]> {
 
   if (styles) checkDuplicateStyles(styles, issues)
   if (numbering) checkAbstractNumbering(numbering, issues)
+  await checkFootnotes(pkg, issues)
   await checkContentTypes(pkg, issues)
   await checkCompatibilityMode(pkg, issues)
 
@@ -228,6 +229,41 @@ function resolveTarget(baseDir: string, target: string): string {
     else if (segment !== '.' && segment !== '') resolved.push(segment)
   }
   return resolved.join('/')
+}
+
+/** Footnote references and the separators named in settings must exist in the footnotes part. */
+async function checkFootnotes(pkg: Package, issues: LintIssue[]): Promise<void> {
+  const footnotes = pkg.has('word/footnotes.xml') ? await pkg.readXml('word/footnotes.xml') : null
+  const defined = new Set(
+    footnotes
+      ? elements(footnotes.documentElement!, W_NS, 'footnote').map((note) => wAttr(note, 'id'))
+      : [],
+  )
+  const document = await pkg.readXml('word/document.xml')
+  for (const reference of descendants(document, W_NS, 'footnoteReference')) {
+    const id = wAttr(reference, 'id')
+    if (!defined.has(id)) {
+      issues.push({
+        severity: 'error',
+        part: 'word/document.xml',
+        message: `Footnote ${id} is referenced but not defined.`,
+      })
+    }
+  }
+  const settings = pkg.has('word/settings.xml') ? await pkg.readXml('word/settings.xml') : null
+  const properties = settings
+    ? elements(settings.documentElement!, W_NS, 'footnotePr')[0]
+    : undefined
+  for (const separator of properties ? elements(properties, W_NS, 'footnote') : []) {
+    const id = wAttr(separator, 'id')
+    if (!defined.has(id)) {
+      issues.push({
+        severity: 'error',
+        part: 'word/settings.xml',
+        message: `Separator footnote ${id} is not defined.`,
+      })
+    }
+  }
 }
 
 async function checkContentTypes(pkg: Package, issues: LintIssue[]): Promise<void> {

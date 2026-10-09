@@ -104,3 +104,22 @@ describe('lintDocx', () => {
     )
   })
 })
+
+describe('lintDocx footnotes', () => {
+  it('reports footnote references without a footnotes part', async () => {
+    const bytes = await docx({ body: '<w:p><w:r><w:footnoteReference w:id="3"/></w:r></w:p>' })
+    expect(messages(await lintDocx(bytes))).toContain(
+      'error: Footnote 3 is referenced but not defined.',
+    )
+  })
+
+  it('reports separators named in settings that do not exist', async () => {
+    const bytes = await docx({
+      body: '<w:p/>',
+      settings: `<w:footnotePr><w:footnote w:id="-1"/></w:footnotePr>${MODE_15}`,
+    })
+    expect(messages(await lintDocx(bytes))).toContain(
+      'error: Separator footnote -1 is not defined.',
+    )
+  })
+})
