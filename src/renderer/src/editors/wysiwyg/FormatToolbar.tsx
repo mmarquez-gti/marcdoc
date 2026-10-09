@@ -26,7 +26,14 @@ import {
   toggleStrong,
 } from './commands'
 import { alignColumn, currentColumnAlign, insertTable, type ColumnAlign } from './tables'
-import { insertFootnote, insertInlineMath, selectedInlineMath, setInlineMath } from './insertions'
+import { isCitation } from '../../../../core/markdown/citations'
+import {
+  insertFootnote,
+  insertValueAtom,
+  selectedValueAtom,
+  setValueAtom,
+  type ValueAtom,
+} from './insertions'
 import { isTaskList, toggleTaskList } from './taskList'
 
 const BLOCK_STYLES = [
@@ -46,7 +53,7 @@ interface FormatToolbarProps {
 
 export function FormatToolbar({ view, state }: FormatToolbarProps) {
   const [linkDraft, setLinkDraft] = useState<string | null>(null)
-  const selectedMath = selectedInlineMath(state)
+  const selectedAtom = selectedValueAtom(state)
 
   const run = (command: Command) => {
     command(view.state, view.dispatch)
@@ -156,19 +163,29 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
           <button type="submit">Apply</button>
         </form>
       )}
-      {selectedMath === null ? (
-        <ToolButton
-          label="Insert inline math"
-          active={false}
-          onClick={() => run(insertInlineMath('x^2'))}
-        >
-          ∑ Math
-        </ToolButton>
+      {selectedAtom === null ? (
+        <>
+          <ToolButton
+            label="Insert inline math"
+            active={false}
+            onClick={() => run(insertValueAtom('math_inline', 'x^2'))}
+          >
+            ∑ Math
+          </ToolButton>
+          <ToolButton
+            label="Insert citation"
+            active={false}
+            onClick={() => run(insertValueAtom('citation', '[@key]'))}
+          >
+            ❞ Cite
+          </ToolButton>
+        </>
       ) : (
-        <MathForm
-          key={selectedMath}
-          value={selectedMath}
-          onApply={(value) => run(setInlineMath(value))}
+        <ValueForm
+          key={`${selectedAtom.type}:${selectedAtom.value}`}
+          {...VALUE_FORMS[selectedAtom.type]}
+          value={selectedAtom.value}
+          onApply={(value) => run(setValueAtom(selectedAtom.type, value))}
         />
       )}
       <ToolButton label="Insert footnote" active={false} onClick={() => run(insertFootnote)}>
@@ -185,23 +202,55 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
   )
 }
 
-/** Edits the TeX of the selected inline math; remounted (via `key`) when the selection changes. */
-function MathForm({ value, onApply }: { value: string; onApply: (value: string) => void }) {
+const VALUE_FORMS: Readonly<
+  Record<ValueAtom, { label: string; validate: (value: string) => string | null }>
+> = {
+  math_inline: {
+    label: 'TeX formula',
+    validate: (value) => (value.trim() ? null : 'Enter a formula'),
+  },
+  citation: {
+    label: 'Citation',
+    validate: (value) =>
+      isCitation(value) ? null : 'Use the form [@key], [@key, p. 3] or [see @a; @b]',
+  },
+}
+
+/**
+ * Edits the value of the selected math or citation; remounted (via `key`) when the selection
+ * changes so the draft starts from the node's value.
+ */
+function ValueForm({
+  label,
+  value,
+  validate,
+  onApply,
+}: {
+  label: string
+  value: string
+  validate: (value: string) => string | null
+  onApply: (value: string) => void
+}) {
   const [draft, setDraft] = useState(value)
+  const problem = validate(draft)
   return (
     <form
       className="link-form"
       onSubmit={(event) => {
         event.preventDefault()
-        onApply(draft)
+        if (!problem) onApply(draft)
       }}
     >
       <input
-        aria-label="TeX formula"
+        aria-label={label}
+        aria-invalid={problem !== null}
+        title={problem ?? ''}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
       />
-      <button type="submit">Apply</button>
+      <button type="submit" disabled={problem !== null}>
+        Apply
+      </button>
     </form>
   )
 }

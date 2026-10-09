@@ -17,6 +17,7 @@ import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { exportDocx } from '../../src/main/export/docxExport'
+import { exportLuaFilters } from '../../src/main/export/filters'
 import { writeShowcase } from './showcase'
 
 const ROOT = join(__dirname, '../..')
@@ -99,6 +100,7 @@ describe.skipIf(!libreOfficeAvailable())('visual regression of Word export (laye
             resourcePath: join(WORK_DIR, 'source'),
             outputPath: docxPath,
             fallbackTitle: 'showcase',
+            luaFilters: exportLuaFilters(RESOURCES),
           },
           templatePath,
           resourcesDir: RESOURCES,

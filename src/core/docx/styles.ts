@@ -26,6 +26,7 @@ const PANDOC_STYLE_ELEMENTS: Readonly<Record<string, MappingKey>> = {
   'footnote text': 'footnoteText',
   'footnote reference': 'footnoteReference',
   Hyperlink: 'hyperlink',
+  Bibliography: 'bibliography',
   'heading 1': 'heading1',
   'heading 2': 'heading2',
   'heading 3': 'heading3',

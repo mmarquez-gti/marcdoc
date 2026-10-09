@@ -6,9 +6,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { lintDocx } from '../../src/core/docx'
 import { exportDocx } from '../../src/main/export/docxExport'
+import { exportLuaFilters } from '../../src/main/export/filters'
 import { writeShowcase } from '../../tests/integration/showcase'
 
 const ROOT = process.cwd()
+const RESOURCES = join(ROOT, 'resources')
 const OUTPUT_DIR = join(ROOT, '.work/validation')
 const TEMPLATES: readonly [string, string | null][] = [
   ['default', null],
@@ -26,7 +28,12 @@ async function main(): Promise<void> {
     try {
       await exportDocx({
         markdown: readFileSync(markdownPath, 'utf8'),
-        invocation: { resourcePath: sourceDir, outputPath, fallbackTitle: 'showcase' },
+        invocation: {
+          resourcePath: sourceDir,
+          outputPath,
+          fallbackTitle: 'showcase',
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
         templatePath,
         resourcesDir: join(ROOT, 'resources'),
         workDir,

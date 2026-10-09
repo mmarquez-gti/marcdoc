@@ -47,6 +47,13 @@ const inlineMath = new InputRule(
   },
 )
 
+// Typing the closing `]` of `[@key…]` turns the group into a citation.
+const citation = new InputRule(
+  /\[[^[\]\n]*?(?<![\w.@])-?@[\p{L}\p{N}_][^[\]\n]*\]$/u,
+  (state, match, start, end) =>
+    state.tr.replaceWith(start, end, nodes.citation.create({ value: match[0] })),
+)
+
 export function buildInputRules(): Plugin {
   return inputRules({
     rules: [
@@ -68,6 +75,7 @@ export function buildInputRules(): Plugin {
       horizontalRule,
       taskInputRule,
       inlineMath,
+      citation,
       markInputRule(/\*\*([^*\s](?:[^*]*[^*\s])?)\*\*$/, marks.strong),
       markInputRule(/(?:^|[^*\w])\*([^*\s](?:[^*]*[^*\s])?)\*$/, marks.emphasis),
       markInputRule(/`([^`]+)`$/, marks.code),

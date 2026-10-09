@@ -12,6 +12,7 @@ import {
 import type { ExportResult } from '../../shared/ipc'
 import { exportDocx } from './docxExport'
 import { printHtmlToPdf } from './htmlToPdf'
+import { exportLuaFilters } from './filters'
 import { runPandoc } from './pandocRunner'
 
 /** Generous limit: LaTeX may run several passes on long documents. */
@@ -40,6 +41,7 @@ export class ExportService {
         resourcePath: job.documentPath ? resolve(dirname(job.documentPath)) : workDir,
         outputPath: job.outputPath,
         fallbackTitle: job.documentPath ? basename(job.documentPath) : 'Untitled',
+        luaFilters: exportLuaFilters(this.resourcesDir),
       }
       const warnings = await this.run(job, invocation, workDir)
       return { outputPath: job.outputPath, warnings }

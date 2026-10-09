@@ -16,6 +16,7 @@ import JSZip from 'jszip'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { lintDocx } from '../../src/core/docx'
 import { exportDocx } from '../../src/main/export/docxExport'
+import { exportLuaFilters } from '../../src/main/export/filters'
 import { solidPng } from '../e2e/png'
 import { wordLikeTemplate } from './fixtures/wordLikeTemplate'
 
@@ -66,7 +67,12 @@ describe.each(TEMPLATES)('Word export with the %s', (label, templatePath) => {
     try {
       await exportDocx({
         markdown: readFileSync(join(workDir, file), 'utf8'),
-        invocation: { resourcePath: workDir, outputPath, fallbackTitle: file },
+        invocation: {
+          resourcePath: workDir,
+          outputPath,
+          fallbackTitle: file,
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
         templatePath,
         resourcesDir: RESOURCES,
         workDir: exportDir,
@@ -103,7 +109,12 @@ describe('title block', () => {
     try {
       await exportDocx({
         markdown: readFileSync(join(workDir, '07-frontmatter.md'), 'utf8'),
-        invocation: { resourcePath: workDir, outputPath, fallbackTitle: 'x' },
+        invocation: {
+          resourcePath: workDir,
+          outputPath,
+          fallbackTitle: 'x',
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
         templatePath,
         resourcesDir: RESOURCES,
         workDir: exportDir,
@@ -138,7 +149,12 @@ describe('merging into a Word-like template', () => {
     try {
       await exportDocx({
         markdown: readFileSync(join(workDir, file), 'utf8'),
-        invocation: { resourcePath: workDir, outputPath, fallbackTitle: 'x' },
+        invocation: {
+          resourcePath: workDir,
+          outputPath,
+          fallbackTitle: 'x',
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
         templatePath: WORD_LIKE_TEMPLATE,
         resourcesDir: RESOURCES,
         workDir: exportDir,
@@ -176,5 +192,45 @@ describe('merging into a Word-like template', () => {
     expect(document.match(/<w:sectPr/g)).toHaveLength(2)
     expect(document).toContain('w14:paraId="00000001"')
     expect(document).not.toContain('{{body}}')
+  })
+})
+
+describe('citations', () => {
+  it('formats citations and the bibliography with citeproc', async () => {
+    copyFileSync(join(ROOT, 'tests/fixtures/bibliography/refs.bib'), join(workDir, 'refs.bib'))
+    const markdown = `---\nbibliography: refs.bib\n---\n\n${readFileSync(join(workDir, '11-citations.md'), 'utf8')}`
+    const outputPath = join(workDir, 'citations.docx')
+    const exportDir = mkdtempSync(join(tmpdir(), 'marcdoc-docx-job-'))
+    let warnings: string[]
+    try {
+      warnings = await exportDocx({
+        markdown,
+        invocation: {
+          resourcePath: workDir,
+          outputPath,
+          fallbackTitle: 'x',
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
+        templatePath: null,
+        resourcesDir: RESOURCES,
+        workDir: exportDir,
+      })
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true })
+    }
+    const xml = await (
+      await JSZip.loadAsync(readFileSync(outputPath))
+    )
+      .file('word/document.xml')!
+      .async('string')
+    const text = Array.from(
+      xml.matchAll(/<w:t(?: [^>]*)?>([^<]*)<\/w:t>/g),
+      (match) => match[1],
+    ).join('')
+    expect(text).toContain('(Doe 2020, 3)')
+    expect(text).toContain('Writing Documents')
+    expect(text).toContain('Markdown in Practice')
+    expect(warnings.some((warning) => warning.includes('citation missing not found'))).toBe(true)
+    expect(xml).toContain('w:val="Bibliography"')
   })
 })

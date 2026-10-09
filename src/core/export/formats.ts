@@ -28,18 +28,30 @@ export interface PandocInvocation {
   readonly outputPath: string
   /** Shown as the document title when the front matter has none (HTML requires a title). */
   readonly fallbackTitle: string
+  /** Lua filters run before --citeproc, e.g. the one that recognizes citations. */
+  readonly luaFilters?: readonly string[]
+}
+
+/**
+ * Filters, then citeproc: citations become Cite elements first, and citeproc formats them with
+ * the `bibliography` and `csl` given in the front matter (found through --resource-path).
+ */
+function filterArgs({ luaFilters = [] }: PandocInvocation): string[] {
+  return [...luaFilters.map((filter) => `--lua-filter=${filter}`), '--citeproc']
 }
 
 /** `templatePath` is a Pandoc LaTeX template; null uses Pandoc's default template. */
 export function latexArgs(
-  { resourcePath, outputPath }: PandocInvocation,
+  invocation: PandocInvocation,
   templatePath: string | null = null,
 ): string[] {
+  const { resourcePath, outputPath } = invocation
   return [
     `--from=${PANDOC_INPUT_FORMAT}`,
     '--to=latex',
     '--standalone',
     ...templateArg(templatePath),
+    ...filterArgs(invocation),
     `--resource-path=${resourcePath}`,
     ...LATEX_VARIABLES,
     `--output=${outputPath}`,
@@ -47,13 +59,15 @@ export function latexArgs(
 }
 
 export function pdfViaLatexArgs(
-  { resourcePath, outputPath }: PandocInvocation,
+  invocation: PandocInvocation,
   templatePath: string | null = null,
 ): string[] {
+  const { resourcePath, outputPath } = invocation
   return [
     `--from=${PANDOC_INPUT_FORMAT}`,
     '--pdf-engine=lualatex',
     ...templateArg(templatePath),
+    ...filterArgs(invocation),
     `--resource-path=${resourcePath}`,
     ...LATEX_VARIABLES,
     `--output=${outputPath}`,
@@ -78,16 +92,15 @@ export function texInputsFor(templateDir: string, inherited: string | undefined)
 }
 
 /** Self-contained HTML (images and CSS inlined, MathML for formulas) ready to print to PDF. */
-export function printableHtmlArgs(
-  { resourcePath, outputPath, fallbackTitle }: PandocInvocation,
-  cssPath: string,
-): string[] {
+export function printableHtmlArgs(invocation: PandocInvocation, cssPath: string): string[] {
+  const { resourcePath, outputPath, fallbackTitle } = invocation
   return [
     `--from=${PANDOC_INPUT_FORMAT}`,
     '--to=html5',
     '--standalone',
     '--embed-resources',
     '--mathml',
+    ...filterArgs(invocation),
     `--css=${cssPath}`,
     `--metadata=pagetitle:${fallbackTitle}`,
     `--resource-path=${resourcePath}`,
@@ -100,15 +113,17 @@ export function printableHtmlArgs(
  * out, for templates whose cover page shows it.
  */
 export function docxArgs(
-  { resourcePath, outputPath }: PandocInvocation,
+  invocation: PandocInvocation,
   referenceDocPath: string,
   stripTitleFilterPath: string | null,
 ): string[] {
+  const { resourcePath, outputPath } = invocation
   return [
     `--from=${PANDOC_INPUT_FORMAT}`,
     '--to=docx',
     `--reference-doc=${referenceDocPath}`,
     ...(stripTitleFilterPath ? [`--lua-filter=${stripTitleFilterPath}`] : []),
+    ...filterArgs(invocation),
     `--resource-path=${resourcePath}`,
     `--output=${outputPath}`,
   ]

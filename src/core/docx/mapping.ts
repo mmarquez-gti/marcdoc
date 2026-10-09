@@ -19,6 +19,7 @@ export const MAPPING_KEYS = [
   'footnoteText',
   'footnoteReference',
   'hyperlink',
+  'bibliography',
 ] as const
 
 export type MappingKey = (typeof MAPPING_KEYS)[number]
@@ -43,6 +44,7 @@ export const MAPPING_KEY_INFO: Readonly<
   footnoteText: { label: 'Footnote text', styleType: 'paragraph' },
   footnoteReference: { label: 'Footnote reference', styleType: 'character' },
   hyperlink: { label: 'Link', styleType: 'character' },
+  bibliography: { label: 'Bibliography entry', styleType: 'paragraph' },
 }
 
 export const DEFAULT_BODY_PLACEHOLDER = '{{body}}'
@@ -132,6 +134,7 @@ const BUILT_IN_NAMES: Readonly<Partial<Record<MappingKey, string>>> = {
   footnoteText: 'footnote text',
   footnoteReference: 'footnote reference',
   hyperlink: 'Hyperlink',
+  bibliography: 'Bibliography',
 }
 
 /**

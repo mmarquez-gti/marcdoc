@@ -6,11 +6,14 @@ import { schema } from '../../../../core/markdown'
 
 const { nodes } = schema
 
-/** Inserts inline math and selects it so its TeX can be edited right away. */
-export function insertInlineMath(value: string): Command {
+/** Inline atoms whose whole content is a text value edited from the toolbar. */
+export type ValueAtom = 'math_inline' | 'citation'
+
+/** Inserts an inline atom and selects it so its value can be edited right away. */
+export function insertValueAtom(type: ValueAtom, value: string): Command {
   return (state, dispatch) => {
     if (dispatch) {
-      const tr = state.tr.replaceSelectionWith(nodes.math_inline.create({ value }))
+      const tr = state.tr.replaceSelectionWith(nodes[type].create({ value }))
       const pos = tr.selection.from - 1
       dispatch(tr.setSelection(NodeSelection.create(tr.doc, pos)))
     }
@@ -18,21 +21,22 @@ export function insertInlineMath(value: string): Command {
   }
 }
 
-export function setInlineMath(value: string): Command {
+export function setValueAtom(type: ValueAtom, value: string): Command {
   return (state, dispatch) => {
     const selection = state.selection
-    if (!(selection instanceof NodeSelection) || selection.node.type !== nodes.math_inline) {
-      return false
-    }
+    if (!(selection instanceof NodeSelection) || selection.node.type !== nodes[type]) return false
     dispatch?.(state.tr.setNodeMarkup(selection.from, undefined, { value }))
     return true
   }
 }
 
-export function selectedInlineMath(state: EditorState): string | null {
+/** The selected inline atom of a value type, if the selection is one. */
+export function selectedValueAtom(state: EditorState): { type: ValueAtom; value: string } | null {
   const selection = state.selection
-  return selection instanceof NodeSelection && selection.node.type === nodes.math_inline
-    ? (selection.node.attrs['value'] as string)
+  if (!(selection instanceof NodeSelection)) return null
+  const name = selection.node.type.name
+  return name === 'math_inline' || name === 'citation'
+    ? { type: name, value: selection.node.attrs['value'] as string }
     : null
 }
 

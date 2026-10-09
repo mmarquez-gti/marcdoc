@@ -76,3 +76,27 @@ describe('LaTeX templates', () => {
     expect(texInputsFor('/t', '/x:')).toBe('/t//:/x:')
   })
 })
+
+describe('citations', () => {
+  const withFilter = { ...invocation, luaFilters: ['/f/citations.lua'] }
+
+  it('runs the Lua filters before citeproc in every format', () => {
+    for (const args of [
+      latexArgs(withFilter),
+      pdfViaLatexArgs(withFilter),
+      printableHtmlArgs(withFilter, '/p.css'),
+      docxArgs(withFilter, '/ref.docx', '/strip.lua'),
+    ]) {
+      const filter = args.indexOf('--lua-filter=/f/citations.lua')
+      expect(filter).toBeGreaterThanOrEqual(0)
+      expect(args.indexOf('--citeproc')).toBeGreaterThan(filter)
+    }
+  })
+
+  it('strips the title before recognizing citations in Word export', () => {
+    const args = docxArgs(withFilter, '/ref.docx', '/strip.lua')
+    expect(args.indexOf('--lua-filter=/strip.lua')).toBeLessThan(
+      args.indexOf('--lua-filter=/f/citations.lua'),
+    )
+  })
+})
