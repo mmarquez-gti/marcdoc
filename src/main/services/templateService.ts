@@ -1,9 +1,19 @@
-import { access, readdir } from 'node:fs/promises'
+import { access, readdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import type { TemplateInfo } from '../../shared/ipc'
+import {
+  checkMappingAgainst,
+  defaultMapping,
+  loadTemplate,
+  mappingPathFor,
+  parseMapping,
+  serializeMapping,
+  templateCoverTags,
+  templateStyles,
+  type StyleMapping,
+} from '../../core/docx'
+import type { TemplateDetails, TemplateInfo } from '../../shared/ipc'
 
 const TEMPLATE_EXTENSIONS = /\.(docx|dotx)$/i
-const MAPPING_SUFFIX = '.marcdoc.json'
 /** Bundled templates that are not offered as samples (used when no template is chosen). */
 const HIDDEN_TEMPLATES = new Set(['marcdoc-default.docx'])
 
@@ -38,6 +48,43 @@ export class TemplateService {
     return this.describe(path)
   }
 
+  async inspect(path: string): Promise<TemplateDetails> {
+    await this.assertAllowed(path)
+    const template = await loadTemplate(await readFile(path))
+    const styles = await templateStyles(template)
+    let mapping: StyleMapping = defaultMapping(styles)
+    let mappingError: string | null = null
+    if (await exists(mappingPathFor(path))) {
+      try {
+        mapping = parseMapping(JSON.parse(await readFile(mappingPathFor(path), 'utf8')))
+      } catch (error) {
+        mappingError = error instanceof Error ? error.message : String(error)
+      }
+    }
+    return {
+      template: await this.describe(path),
+      editable: this.chosen.has(path),
+      styles,
+      mapping,
+      mappingError,
+      coverTags: await templateCoverTags(template),
+    }
+  }
+
+  async saveMapping(path: string, mapping: unknown): Promise<TemplateInfo> {
+    if (!this.chosen.has(path))
+      throw new Error('Only templates you chose can have their mapping changed.')
+    // Validate at the boundary: the renderer's object is untrusted input.
+    const parsed = parseMapping(mapping)
+    const problems = checkMappingAgainst(
+      parsed,
+      await templateStyles(await loadTemplate(await readFile(path))),
+    )
+    if (problems.length > 0) throw new Error(problems.join(' '))
+    await writeFile(mappingPathFor(path), serializeMapping(parsed), 'utf8')
+    return this.describe(path)
+  }
+
   /** Throws unless `path` is a bundled template or one the user chose. */
   async assertAllowed(path: string): Promise<void> {
     if (this.chosen.has(path)) return
@@ -51,7 +98,7 @@ export class TemplateService {
     return {
       path,
       name: basename(path),
-      hasMappingFile: await exists(path.replace(TEMPLATE_EXTENSIONS, '') + MAPPING_SUFFIX),
+      hasMappingFile: await exists(mappingPathFor(path)),
     }
   }
 }

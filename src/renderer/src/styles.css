@@ -442,3 +442,40 @@ body,
 .dialog-actions .primary {
   font-weight: 600;
 }
+
+.dialog:has(.mapping-editor) {
+  width: min(44rem, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.mapping-editor h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+}
+
+.mapping-grid label,
+.mapping-row {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.mapping-grid select {
+  min-width: 0;
+}
+
+.mapping-problems,
+.notice {
+  color: #b3261e;
+  font-size: 0.9rem;
+}

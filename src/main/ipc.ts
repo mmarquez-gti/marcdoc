@@ -85,6 +85,12 @@ export function registerIpcHandlers(
     return result.canceled || !path ? null : templates.choose(path)
   })
 
+  ipcMain.handle(IpcChannel.InspectTemplate, (_event, path: string) => templates.inspect(path))
+
+  ipcMain.handle(IpcChannel.SaveMapping, (_event, path: string, mapping: unknown) =>
+    templates.saveMapping(path, mapping),
+  )
+
   ipcMain.handle(IpcChannel.ImportAsset, (_event, fileName: string, bytes: Uint8Array) =>
     assets.import(fileName, bytes),
   )

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { EXPORT_FORMATS, type ExportFormat } from '../../../core/export/formats'
 import type { TemplateInfo, ToolStatus } from '../../../shared/ipc'
+import { MappingEditor } from './MappingEditor'
 
 const FORMAT_ORDER: readonly ExportFormat[] = ['docx', 'pdf-latex', 'pdf-html', 'latex']
 
@@ -30,6 +31,7 @@ export function ExportDialog({
   const [format, setFormat] = useState<ExportFormat>(initialFormat)
   const [tools, setTools] = useState<readonly ToolStatus[] | null>(null)
   const [bundled, setBundled] = useState<readonly TemplateInfo[]>([])
+  const [editingMapping, setEditingMapping] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -78,76 +80,95 @@ export function ExportDialog({
         onKeyDown={(event) => event.key === 'Escape' && onClose()}
       >
         <h2 id="export-dialog-title">Export</h2>
-        <fieldset>
-          <legend>Format</legend>
-          {FORMAT_ORDER.map((candidate) => {
-            const reason = unavailable(candidate)
-            return (
-              <label key={candidate} className={reason ? 'option disabled' : 'option'}>
-                <input
-                  type="radio"
-                  name="format"
-                  value={candidate}
-                  checked={format === candidate}
-                  disabled={reason !== null}
-                  onChange={() => setFormat(candidate)}
-                />
-                <span>
-                  <strong>{EXPORT_FORMATS[candidate].label}</strong>
-                  <small>{reason ?? FORMAT_HINTS[candidate]}</small>
-                </span>
-              </label>
-            )
-          })}
-        </fieldset>
+        {editingMapping && template ? (
+          <MappingEditor
+            templatePath={template.path}
+            onSaved={(saved) => {
+              onTemplateChange(saved)
+              setEditingMapping(false)
+            }}
+            onClose={() => setEditingMapping(false)}
+          />
+        ) : (
+          <>
+            <fieldset>
+              <legend>Format</legend>
+              {FORMAT_ORDER.map((candidate) => {
+                const reason = unavailable(candidate)
+                return (
+                  <label key={candidate} className={reason ? 'option disabled' : 'option'}>
+                    <input
+                      type="radio"
+                      name="format"
+                      value={candidate}
+                      checked={format === candidate}
+                      disabled={reason !== null}
+                      onChange={() => setFormat(candidate)}
+                    />
+                    <span>
+                      <strong>{EXPORT_FORMATS[candidate].label}</strong>
+                      <small>{reason ?? FORMAT_HINTS[candidate]}</small>
+                    </span>
+                  </label>
+                )
+              })}
+            </fieldset>
 
-        {format === 'docx' && (
-          <fieldset>
-            <legend>Word template</legend>
-            <div className="template-row">
-              <select
-                aria-label="Word template"
-                value={template?.path ?? ''}
-                onChange={(event) =>
-                  onTemplateChange(
-                    templateOptions.find((option) => option.path === event.target.value) ?? null,
-                  )
-                }
+            {format === 'docx' && (
+              <fieldset>
+                <legend>Word template</legend>
+                <div className="template-row">
+                  <select
+                    aria-label="Word template"
+                    value={template?.path ?? ''}
+                    onChange={(event) =>
+                      onTemplateChange(
+                        templateOptions.find((option) => option.path === event.target.value) ??
+                          null,
+                      )
+                    }
+                  >
+                    <option value="">MarcDoc default</option>
+                    {templateOptions.map((option) => (
+                      <option key={option.path} value={option.path}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => void chooseTemplate()}>
+                    Choose…
+                  </button>
+                  {template && (
+                    <button type="button" onClick={() => setEditingMapping(true)}>
+                      Style mapping…
+                    </button>
+                  )}
+                </div>
+                {template && (
+                  <small className="template-note">
+                    {template.hasMappingFile
+                      ? 'Styles follow the template’s mapping file.'
+                      : 'No mapping file next to this template: Markdown elements use Word’s built-in styles of the same name.'}
+                  </small>
+                )}
+              </fieldset>
+            )}
+
+            <div className="dialog-actions">
+              <button type="button" onClick={onClose}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary"
+                disabled={blocked !== null}
+                onClick={() => onExport(format)}
               >
-                <option value="">MarcDoc default</option>
-                {templateOptions.map((option) => (
-                  <option key={option.path} value={option.path}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-              <button type="button" onClick={() => void chooseTemplate()}>
-                Choose…
+                Export…
               </button>
             </div>
-            {template && (
-              <small className="template-note">
-                {template.hasMappingFile
-                  ? 'Styles follow the template’s mapping file.'
-                  : 'No mapping file next to this template: Markdown elements use Word’s built-in styles of the same name.'}
-              </small>
-            )}
-          </fieldset>
+          </>
         )}
-
-        <div className="dialog-actions">
-          <button type="button" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="primary"
-            disabled={blocked !== null}
-            onClick={() => onExport(format)}
-          >
-            Export…
-          </button>
-        </div>
       </div>
     </div>
   )

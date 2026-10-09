@@ -12,6 +12,7 @@ import {
   hasCover,
   lintDocx,
   loadTemplate,
+  mappingPathFor,
   Package,
   parseMapping,
   templateStyles,
@@ -20,7 +21,6 @@ import {
 import { runPandoc } from './pandocRunner'
 
 export const DEFAULT_TEMPLATE = 'templates/docx/marcdoc-default.docx'
-const MAPPING_SUFFIX = '.marcdoc.json'
 
 export interface DocxExportInput {
   readonly markdown: string
@@ -77,7 +77,7 @@ export async function exportDocx(input: DocxExportInput): Promise<string[]> {
 
 /** `<template>.marcdoc.json` next to the template, or a mapping derived from its built-in styles. */
 async function loadMapping(templatePath: string, template: Package): Promise<StyleMapping> {
-  const mappingPath = templatePath.replace(/\.(docx|dotx)$/i, '') + MAPPING_SUFFIX
+  const mappingPath = mappingPathFor(templatePath)
   if (!(await exists(mappingPath))) return defaultMapping(await templateStyles(template))
   let json: unknown
   try {

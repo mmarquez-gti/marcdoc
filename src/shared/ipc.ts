@@ -11,9 +11,12 @@ export const IpcChannel = {
   ExportDocument: 'document:export',
   ListTemplates: 'template:list',
   ChooseTemplate: 'template:choose',
+  InspectTemplate: 'template:inspect',
+  SaveMapping: 'template:save-mapping',
   MenuCommand: 'menu:command',
 } as const
 
+import type { StyleInfo, StyleMapping } from '../core/docx'
 import type { ExportFormat } from '../core/export/formats'
 
 export type ViewMode = 'split' | 'wysiwyg' | 'source'
@@ -34,6 +37,19 @@ export interface TemplateInfo {
   readonly name: string
   /** A `<template>.marcdoc.json` mapping exists; otherwise styles are matched by built-in names. */
   readonly hasMappingFile: boolean
+}
+
+export interface TemplateDetails {
+  readonly template: TemplateInfo
+  /** Bundled templates cannot be changed; their mapping is shown read-only. */
+  readonly editable: boolean
+  readonly styles: readonly StyleInfo[]
+  /** The mapping file's contents, or the default mapping when there is none or it is invalid. */
+  readonly mapping: StyleMapping
+  /** Why the mapping file could not be used, if it exists but is invalid. */
+  readonly mappingError: string | null
+  /** Content control tags in the template, which the cover mapping can fill. */
+  readonly coverTags: readonly string[]
 }
 
 export interface ExportResult {
@@ -83,6 +99,9 @@ export interface MarcDocApi {
   listTemplates(): Promise<TemplateInfo[]>
   /** Shows the open dialog for a Word template; resolves to null if the user cancels. */
   chooseTemplate(): Promise<TemplateInfo | null>
+  inspectTemplate(path: string): Promise<TemplateDetails>
+  /** Writes `<template>.marcdoc.json`; rejects mappings that do not fit the template. */
+  saveMapping(path: string, mapping: StyleMapping): Promise<TemplateInfo>
   /** Asks where to save, then exports; resolves to null if the user cancels the dialog. */
   exportDocument(request: ExportRequest): Promise<ExportResult | null>
   /** Subscribes to menu commands; returns an unsubscribe function. */
