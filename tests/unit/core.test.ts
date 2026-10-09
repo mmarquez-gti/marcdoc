@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { formatWindowTitle } from '../../src/core'
 
 describe('formatWindowTitle', () => {
-  it('uses "Untitled" when the document has no file name', () => {
-    expect(formatWindowTitle(null, false)).toBe('Untitled — MarcDoc')
+  it('shows the document name', () => {
+    expect(formatWindowTitle('notes.md', false)).toBe('notes.md — MarcDoc')
   })
 
   it('prefixes a dirty mark when there are unsaved changes', () => {

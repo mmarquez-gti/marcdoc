@@ -2,7 +2,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirro
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
-import { Annotation, EditorState } from '@codemirror/state'
+import { Annotation, Compartment, EditorState } from '@codemirror/state'
 import {
   drawSelection,
   EditorView,
@@ -12,9 +12,17 @@ import {
 } from '@codemirror/view'
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { minimalTextChange } from '../../../../core/sync/textDiff'
+import { useT } from '../../i18n'
 
 /** Marks transactions that come from outside the editor, so they are not reported back. */
 const external = Annotation.define<boolean>()
+
+/** Holds the accessible label so it can follow the interface language. */
+const labelCompartment = new Compartment()
+
+function labelExtension(label: string) {
+  return EditorView.contentAttributes.of({ 'aria-label': label, spellcheck: 'false' })
+}
 
 /** Position at the top of the visible area: a 1-based line plus how far into it (0..1). */
 export interface LinePosition {
@@ -40,16 +48,23 @@ export function CodeView({ documentKey, value, onChange, ref }: CodeViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
+  const label = useT()('editor.source')
+  const labelRef = useRef(label)
 
   useEffect(() => {
     onChangeRef.current = onChange
   }, [onChange])
 
+  useEffect(() => {
+    labelRef.current = label
+    viewRef.current?.dispatch({ effects: labelCompartment.reconfigure(labelExtension(label)) })
+  }, [label])
+
   // A new document gets a fresh editor state, so undo cannot cross into the previous file.
   useEffect(() => {
     const view = new EditorView({
       parent: hostRef.current!,
-      state: createState(value, (text) => onChangeRef.current(text)),
+      state: createState(value, labelRef.current, (text) => onChangeRef.current(text)),
     })
     viewRef.current = view
     return () => {
@@ -95,7 +110,7 @@ export function CodeView({ documentKey, value, onChange, ref }: CodeViewProps) {
   return <div className="code-view" ref={hostRef} />
 }
 
-function createState(doc: string, onChange: (text: string) => void): EditorState {
+function createState(doc: string, label: string, onChange: (text: string) => void): EditorState {
   return EditorState.create({
     doc,
     extensions: [
@@ -110,7 +125,7 @@ function createState(doc: string, onChange: (text: string) => void): EditorState
       markdown({ base: markdownLanguage }),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
-      EditorView.contentAttributes.of({ 'aria-label': 'Markdown source', spellcheck: 'false' }),
+      labelCompartment.of(labelExtension(label)),
       EditorView.updateListener.of((update) => {
         const fromOutside = update.transactions.some((transaction) =>
           transaction.annotation(external),

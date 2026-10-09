@@ -10,8 +10,10 @@ import { WysiwygView, type WysiwygViewHandle } from './editors/wysiwyg/WysiwygVi
 import { useDocument } from './hooks/useDocument'
 import { useExport } from './hooks/useExport'
 import { useScrollSync } from './hooks/useScrollSync'
+import { useT } from './i18n'
 
 export function App() {
+  const t = useT()
   const document = useDocument()
   const [viewMode, setViewMode] = useState<ViewMode>('split')
   const codeRef = useRef<CodeViewHandle>(null)
@@ -58,7 +60,7 @@ export function App() {
       {document.error && (
         <div className="banner banner-error" role="alert">
           <span>{document.error}</span>
-          <button type="button" onClick={document.clearError} aria-label="Dismiss">
+          <button type="button" onClick={document.clearError} aria-label={t('common.dismiss')}>
             ×
           </button>
         </div>

@@ -1,3 +1,4 @@
+import { useT } from '../i18n'
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react'
 import {
   documentReducer,
@@ -22,6 +23,7 @@ export interface DocumentController {
 }
 
 export function useDocument(): DocumentController {
+  const t = useT()
   const [state, dispatch] = useReducer(documentReducer, EMPTY_DOCUMENT)
   const [error, setError] = useState<string | null>(null)
   // Commands triggered from the menu need the latest state without re-subscribing.
@@ -33,9 +35,9 @@ export function useDocument(): DocumentController {
   const dirty = isDirty(state)
 
   useEffect(() => {
-    document.title = formatWindowTitle(fileNameOf(state.path), dirty)
+    document.title = formatWindowTitle(fileNameOf(state.path) ?? t('app.untitled'), dirty)
     window.marcdoc.setDirty(dirty)
-  }, [state.path, dirty])
+  }, [state.path, dirty, t])
 
   const run = useCallback(
     async (action: () => Promise<void>) => {
@@ -77,16 +79,13 @@ export function useDocument(): DocumentController {
   const open = useCallback(
     () =>
       run(async () => {
-        if (
-          isDirty(stateRef.current) &&
-          !window.confirm('Discard unsaved changes and open another file?')
-        ) {
+        if (isDirty(stateRef.current) && !window.confirm(t('document.discardAndOpen'))) {
           return
         }
         const opened = await window.marcdoc.openDocument()
         if (opened) dispatch({ type: 'opened', path: opened.path, content: opened.content })
       }),
-    [run],
+    [run, t],
   )
 
   useEffect(

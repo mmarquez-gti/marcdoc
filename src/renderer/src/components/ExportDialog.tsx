@@ -2,15 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { EXPORT_FORMATS, type ExportFormat } from '../../../core/export/formats'
 import type { LatexTemplateInfo, TemplateInfo, ToolStatus } from '../../../shared/ipc'
 import { MappingEditor } from './MappingEditor'
+import { useT } from '../i18n'
 
 const FORMAT_ORDER: readonly ExportFormat[] = ['docx', 'pdf-latex', 'pdf-html', 'latex']
-
-const FORMAT_HINTS: Readonly<Record<ExportFormat, string>> = {
-  docx: 'Word document following the styles of a template',
-  'pdf-latex': 'Best typography; requires LuaLaTeX',
-  'pdf-html': 'Looks like the document view',
-  latex: 'Standalone .tex source',
-}
 
 interface ExportDialogProps {
   readonly initialFormat: ExportFormat
@@ -33,6 +27,7 @@ export function ExportDialog({
   onExport,
   onClose,
 }: ExportDialogProps) {
+  const t = useT()
   const [format, setFormat] = useState<ExportFormat>(initialFormat)
   const [tools, setTools] = useState<readonly ToolStatus[] | null>(null)
   const [bundled, setBundled] = useState<readonly TemplateInfo[]>([])
@@ -57,8 +52,8 @@ export function ExportDialog({
     return missing
       .map((tool) =>
         tool.missingFiles.length > 0
-          ? `${tool.label} is missing ${tool.missingFiles.join(', ')}`
-          : `${tool.label} is not installed`,
+          ? t('tools.missingShort', { tool: tool.label, files: tool.missingFiles.join(', ') })
+          : t('tools.notInstalled', { tool: tool.label }),
       )
       .join('; ')
   }
@@ -106,7 +101,7 @@ export function ExportDialog({
         aria-labelledby="export-dialog-title"
         onKeyDown={(event) => event.key === 'Escape' && onClose()}
       >
-        <h2 id="export-dialog-title">Export</h2>
+        <h2 id="export-dialog-title">{t('export.title')}</h2>
         {editingMapping && template ? (
           <MappingEditor
             templatePath={template.path}
@@ -119,7 +114,7 @@ export function ExportDialog({
         ) : (
           <>
             <fieldset>
-              <legend>Format</legend>
+              <legend>{t('export.format')}</legend>
               {FORMAT_ORDER.map((candidate) => {
                 const reason = unavailable(candidate)
                 return (
@@ -133,8 +128,8 @@ export function ExportDialog({
                       onChange={() => setFormat(candidate)}
                     />
                     <span>
-                      <strong>{EXPORT_FORMATS[candidate].label}</strong>
-                      <small>{reason ?? FORMAT_HINTS[candidate]}</small>
+                      <strong>{t(`export.format.${candidate}`)}</strong>
+                      <small>{reason ?? t(`export.hint.${candidate}`)}</small>
                     </span>
                   </label>
                 )
@@ -143,10 +138,10 @@ export function ExportDialog({
 
             {format === 'docx' && (
               <fieldset>
-                <legend>Word template</legend>
+                <legend>{t('export.wordTemplate')}</legend>
                 <div className="template-row">
                   <select
-                    aria-label="Word template"
+                    aria-label={t('export.wordTemplate')}
                     value={template?.path ?? ''}
                     onChange={(event) =>
                       onTemplateChange(
@@ -155,7 +150,7 @@ export function ExportDialog({
                       )
                     }
                   >
-                    <option value="">MarcDoc default</option>
+                    <option value="">{t('export.defaultTemplate')}</option>
                     {templateOptions.map((option) => (
                       <option key={option.path} value={option.path}>
                         {option.name}
@@ -163,19 +158,17 @@ export function ExportDialog({
                     ))}
                   </select>
                   <button type="button" onClick={() => void chooseTemplate()}>
-                    Choose…
+                    {t('export.choose')}
                   </button>
                   {template && (
                     <button type="button" onClick={() => setEditingMapping(true)}>
-                      Style mapping…
+                      {t('export.styleMapping')}
                     </button>
                   )}
                 </div>
                 {template && (
                   <small className="template-note">
-                    {template.hasMappingFile
-                      ? 'Styles follow the template’s mapping file.'
-                      : 'No mapping file next to this template: Markdown elements use Word’s built-in styles of the same name.'}
+                    {template.hasMappingFile ? t('export.mappingFile') : t('export.noMappingFile')}
                   </small>
                 )}
               </fieldset>
@@ -183,10 +176,10 @@ export function ExportDialog({
 
             {(format === 'pdf-latex' || format === 'latex') && (
               <fieldset>
-                <legend>LaTeX template</legend>
+                <legend>{t('export.latexTemplate')}</legend>
                 <div className="template-row">
                   <select
-                    aria-label="LaTeX template"
+                    aria-label={t('export.latexTemplate')}
                     value={latexTemplate?.path ?? ''}
                     onChange={(event) =>
                       onLatexTemplateChange(
@@ -194,7 +187,7 @@ export function ExportDialog({
                       )
                     }
                   >
-                    <option value="">Pandoc default</option>
+                    <option value="">{t('export.pandocDefault')}</option>
                     {latexOptions.map((option) => (
                       <option key={option.path} value={option.path}>
                         {option.name}
@@ -202,12 +195,10 @@ export function ExportDialog({
                     ))}
                   </select>
                   <button type="button" onClick={() => void chooseLatexTemplate()}>
-                    Choose…
+                    {t('export.choose')}
                   </button>
                 </div>
-                <small className="template-note">
-                  Classes and packages next to the template (.cls, .sty) are found automatically.
-                </small>
+                <small className="template-note">{t('export.latexTemplateNote')}</small>
               </fieldset>
             )}
 
@@ -219,7 +210,7 @@ export function ExportDialog({
 
             <div className="dialog-actions">
               <button type="button" onClick={onClose}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -227,7 +218,7 @@ export function ExportDialog({
                 disabled={blocked !== null}
                 onClick={() => onExport(format)}
               >
-                Export…
+                {t('export.export')}
               </button>
             </div>
           </>

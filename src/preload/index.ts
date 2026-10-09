@@ -1,7 +1,15 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import type { Locale } from '../shared/i18n'
 import { IpcChannel, type MarcDocApi, type MenuCommand } from '../shared/ipc'
 
 const api: MarcDocApi = {
+  // Synchronous once at startup, so the interface renders in the right language from the start.
+  initialLocale: ipcRenderer.sendSync(IpcChannel.GetLocale) as Locale,
+  onLocaleChange: (listener) => {
+    const handler = (_event: IpcRendererEvent, locale: Locale) => listener(locale)
+    ipcRenderer.on(IpcChannel.LocaleChanged, handler)
+    return () => ipcRenderer.removeListener(IpcChannel.LocaleChanged, handler)
+  },
   openDocument: () => ipcRenderer.invoke(IpcChannel.OpenDocument),
   saveDocument: (path, content) => ipcRenderer.invoke(IpcChannel.SaveDocument, path, content),
   saveDocumentAs: (content, currentPath) =>

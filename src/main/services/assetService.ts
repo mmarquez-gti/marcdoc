@@ -7,6 +7,7 @@ import {
   sanitizeAssetName,
   uniqueName,
 } from '../../core'
+import { UserError } from '../userError'
 
 const MAX_ASSET_BYTES = 50 * 1024 * 1024
 const NOT_FOUND = 404
@@ -41,7 +42,7 @@ export class AssetService {
   /** Copies an image into `<document dir>/assets/` and returns its path relative to the document. */
   async import(fileName: string, bytes: Uint8Array): Promise<string> {
     const documentPath = this.currentDocumentPath()
-    if (!documentPath) throw new Error('Save the document before adding images.')
+    if (!documentPath) throw new UserError('error.saveBeforeImages')
     if (!imageMimeType(fileName)) throw new Error(`"${fileName}" is not a supported image type.`)
     if (bytes.byteLength > MAX_ASSET_BYTES) throw new Error(`"${fileName}" is larger than 50 MB.`)
 

@@ -2,6 +2,8 @@ export { adaptToTemplate, type AdaptInput, type AdaptReport } from './adapter'
 export { lintDocx, type LintIssue } from './lint'
 export {
   checkMappingAgainst,
+  findMappingProblems,
+  type MappingProblem,
   DEFAULT_BODY_PLACEHOLDER,
   defaultMapping,
   MAPPING_KEY_INFO,

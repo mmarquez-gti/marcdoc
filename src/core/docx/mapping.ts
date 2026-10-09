@@ -171,23 +171,47 @@ export function serializeMapping(mapping: StyleMapping): string {
   return `${JSON.stringify(file, null, 2)}\n`
 }
 
+export type MappingProblem =
+  | { readonly kind: 'missingStyle'; readonly key: MappingKey; readonly id: string }
+  | {
+      readonly kind: 'wrongType'
+      readonly key: MappingKey
+      readonly styleName: string
+      readonly actual: StyleType
+      readonly expected: StyleType
+    }
+
 /**
  * Problems that make a mapping unusable with a template: styles it does not define, or of the
  * wrong type. Returns an empty list when the mapping fits.
  */
+export function findMappingProblems(
+  mapping: StyleMapping,
+  catalog: readonly StyleInfo[],
+): MappingProblem[] {
+  const byId = new Map(catalog.map((style) => [style.id, style]))
+  return MAPPING_KEYS.flatMap((key): MappingProblem[] => {
+    const id = mapping.styles[key]
+    if (!id) return []
+    const style = byId.get(id)
+    const expected = MAPPING_KEY_INFO[key].styleType
+    if (!style) return [{ kind: 'missingStyle', key, id }]
+    if (style.type !== expected) {
+      return [{ kind: 'wrongType', key, styleName: style.name, actual: style.type, expected }]
+    }
+    return []
+  })
+}
+
+/** findMappingProblems as English sentences, for error messages. */
 export function checkMappingAgainst(
   mapping: StyleMapping,
   catalog: readonly StyleInfo[],
 ): string[] {
-  const byId = new Map(catalog.map((style) => [style.id, style]))
-  return MAPPING_KEYS.flatMap((key) => {
-    const id = mapping.styles[key]
-    if (!id) return []
-    const style = byId.get(id)
-    const { label, styleType } = MAPPING_KEY_INFO[key]
-    if (!style) return [`${label}: the template has no style "${id}".`]
-    if (style.type !== styleType)
-      return [`${label}: "${style.name}" is a ${style.type} style; a ${styleType} style is needed.`]
-    return []
+  return findMappingProblems(mapping, catalog).map((problem) => {
+    const label = MAPPING_KEY_INFO[problem.key].label
+    return problem.kind === 'missingStyle'
+      ? `${label}: the template has no style "${problem.id}".`
+      : `${label}: "${problem.styleName}" is a ${problem.actual} style; a ${problem.expected} style is needed.`
   })
 }

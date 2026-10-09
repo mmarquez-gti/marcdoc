@@ -10,6 +10,8 @@ import {
 } from 'prosemirror-tables'
 import { useState, type FormEvent } from 'react'
 import { schema } from '../../../../core/markdown'
+import type { MessageKey } from '../../../../shared/i18n'
+import { useT } from '../../i18n'
 import {
   currentBlockStyle,
   currentListKind,
@@ -37,10 +39,16 @@ import {
 import { isTaskList, toggleTaskList } from './taskList'
 
 const BLOCK_STYLES = [
-  { value: 'paragraph', label: 'Normal text', command: setParagraph },
+  {
+    value: 'paragraph',
+    labelKey: 'format.normalText' as MessageKey,
+    level: 0,
+    command: setParagraph,
+  },
   ...[1, 2, 3, 4, 5, 6].map((level) => ({
     value: `heading${level}`,
-    label: `Heading ${level}`,
+    labelKey: 'format.heading' as MessageKey,
+    level,
     command: setHeading(level),
   })),
 ]
@@ -52,6 +60,7 @@ interface FormatToolbarProps {
 }
 
 export function FormatToolbar({ view, state }: FormatToolbarProps) {
+  const t = useT()
   const [linkDraft, setLinkDraft] = useState<string | null>(null)
   const selectedAtom = selectedValueAtom(state)
 
@@ -71,9 +80,9 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
   }
 
   return (
-    <div className="format-toolbar" role="toolbar" aria-label="Formatting">
+    <div className="format-toolbar" role="toolbar" aria-label={t('format.toolbar')}>
       <select
-        aria-label="Block style"
+        aria-label={t('format.blockStyle')}
         value={BLOCK_STYLES.some((style) => style.value === blockStyle) ? blockStyle : ''}
         onChange={(event) => {
           const style = BLOCK_STYLES.find((candidate) => candidate.value === event.target.value)
@@ -85,99 +94,103 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
         </option>
         {BLOCK_STYLES.map((style) => (
           <option key={style.value} value={style.value}>
-            {style.label}
+            {t(style.labelKey, { level: style.level })}
           </option>
         ))}
       </select>
       <ToolButton
-        label="Bold (Ctrl+B)"
+        label={t('format.bold')}
         active={isMarkActive(state, schema.marks.strong)}
         onClick={() => run(toggleStrong)}
       >
         <strong>B</strong>
       </ToolButton>
       <ToolButton
-        label="Italic (Ctrl+I)"
+        label={t('format.italic')}
         active={isMarkActive(state, schema.marks.emphasis)}
         onClick={() => run(toggleEmphasis)}
       >
         <em>I</em>
       </ToolButton>
       <ToolButton
-        label="Inline code (Ctrl+`)"
+        label={t('format.code')}
         active={isMarkActive(state, schema.marks.code)}
         onClick={() => run(toggleCode)}
       >
         {'</>'}
       </ToolButton>
       <ToolButton
-        label="Strikethrough (Ctrl+Shift+X)"
+        label={t('format.strikethrough')}
         active={isMarkActive(state, schema.marks.delete)}
         onClick={() => run(toggleDelete)}
       >
         <s>S</s>
       </ToolButton>
       <ToolButton
-        label="Bulleted list (Ctrl+Shift+8)"
+        label={t('format.bulletList')}
         active={listKind === 'bullet'}
         onClick={() => run(toggleList(false))}
       >
-        • List
+        {t('format.bulletListButton')}
       </ToolButton>
       <ToolButton
-        label="Numbered list (Ctrl+Shift+7)"
+        label={t('format.orderedList')}
         active={listKind === 'ordered'}
         onClick={() => run(toggleList(true))}
       >
-        1. List
-      </ToolButton>
-      <ToolButton label="Task list" active={isTaskList(state)} onClick={() => run(toggleTaskList)}>
-        ☑ Tasks
+        {t('format.orderedListButton')}
       </ToolButton>
       <ToolButton
-        label="Quote"
+        label={t('format.taskList')}
+        active={isTaskList(state)}
+        onClick={() => run(toggleTaskList)}
+      >
+        {t('format.taskListButton')}
+      </ToolButton>
+      <ToolButton
+        label={t('format.quote')}
         active={isInside(state, schema.nodes.blockquote)}
         onClick={() => run(toggleBlockquote)}
       >
-        ❝ Quote
+        {t('format.quoteButton')}
       </ToolButton>
       {linkDraft === null ? (
         <ToolButton
-          label="Link"
+          label={t('format.link')}
           active={isMarkActive(state, schema.marks.link)}
           disabled={!canLink}
           onClick={() => setLinkDraft('')}
         >
-          Link
+          {t('format.link')}
         </ToolButton>
       ) : (
         <form className="link-form" onSubmit={applyLink}>
           <input
             autoFocus
-            aria-label="Link address"
-            placeholder="https://… (empty removes the link)"
+            aria-label={t('format.linkAddress')}
+            placeholder={t('format.linkPlaceholder')}
             value={linkDraft}
             onChange={(event) => setLinkDraft(event.target.value)}
             onKeyDown={(event) => event.key === 'Escape' && setLinkDraft(null)}
           />
-          <button type="submit">Apply</button>
+          <button type="submit">{t('common.apply')}</button>
         </form>
       )}
       {selectedAtom === null ? (
         <>
           <ToolButton
-            label="Insert inline math"
+            label={t('format.insertMath')}
             active={false}
             onClick={() => run(insertValueAtom('math_inline', 'x^2'))}
           >
-            ∑ Math
+            {t('format.mathButton')}
           </ToolButton>
           <ToolButton
-            label="Insert citation"
+            label={t('format.insertCitation')}
             active={false}
             onClick={() => run(insertValueAtom('citation', '[@key]'))}
           >
-            ❞ Cite
+            {t('format.citationButton')}
           </ToolButton>
         </>
       ) : (
@@ -188,14 +201,18 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
           onApply={(value) => run(setValueAtom(selectedAtom.type, value))}
         />
       )}
-      <ToolButton label="Insert footnote" active={false} onClick={() => run(insertFootnote)}>
-        ¹ Note
+      <ToolButton
+        label={t('format.insertFootnote')}
+        active={false}
+        onClick={() => run(insertFootnote)}
+      >
+        {t('format.footnoteButton')}
       </ToolButton>
       {isInTable(state) ? (
         <TableControls state={state} run={run} />
       ) : (
-        <ToolButton label="Insert table" active={false} onClick={() => run(insertTable)}>
-          ▦ Table
+        <ToolButton label={t('format.insertTable')} active={false} onClick={() => run(insertTable)}>
+          {t('format.tableButton')}
         </ToolButton>
       )}
     </div>
@@ -203,16 +220,15 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
 }
 
 const VALUE_FORMS: Readonly<
-  Record<ValueAtom, { label: string; validate: (value: string) => string | null }>
+  Record<ValueAtom, { label: MessageKey; validate: (value: string) => MessageKey | null }>
 > = {
   math_inline: {
-    label: 'TeX formula',
-    validate: (value) => (value.trim() ? null : 'Enter a formula'),
+    label: 'format.texFormula',
+    validate: (value) => (value.trim() ? null : 'format.enterFormula'),
   },
   citation: {
-    label: 'Citation',
-    validate: (value) =>
-      isCitation(value) ? null : 'Use the form [@key], [@key, p. 3] or [see @a; @b]',
+    label: 'format.citation',
+    validate: (value) => (isCitation(value) ? null : 'format.citationHelp'),
   },
 }
 
@@ -226,11 +242,12 @@ function ValueForm({
   validate,
   onApply,
 }: {
-  label: string
+  label: MessageKey
   value: string
-  validate: (value: string) => string | null
+  validate: (value: string) => MessageKey | null
   onApply: (value: string) => void
 }) {
+  const t = useT()
   const [draft, setDraft] = useState(value)
   const problem = validate(draft)
   return (
@@ -242,53 +259,54 @@ function ValueForm({
       }}
     >
       <input
-        aria-label={label}
+        aria-label={t(label)}
         aria-invalid={problem !== null}
-        title={problem ?? ''}
+        title={problem ? t(problem) : ''}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
       />
       <button type="submit" disabled={problem !== null}>
-        Apply
+        {t('common.apply')}
       </button>
     </form>
   )
 }
 
-const COLUMN_ALIGNMENTS: readonly { align: ColumnAlign; label: string; icon: string }[] = [
-  { align: 'left', label: 'Align column left', icon: '⇤' },
-  { align: 'center', label: 'Center column', icon: '↔' },
-  { align: 'right', label: 'Align column right', icon: '⇥' },
+const COLUMN_ALIGNMENTS: readonly { align: ColumnAlign; label: MessageKey; icon: string }[] = [
+  { align: 'left', label: 'table.alignLeft', icon: '⇤' },
+  { align: 'center', label: 'table.alignCenter', icon: '↔' },
+  { align: 'right', label: 'table.alignRight', icon: '⇥' },
 ]
 
 function TableControls({ state, run }: { state: EditorState; run: (command: Command) => void }) {
+  const t = useT()
   const align = currentColumnAlign(state)
   return (
-    <span className="table-controls" role="group" aria-label="Table">
-      <ToolButton label="Add row below" active={false} onClick={() => run(addRowAfter)}>
-        +Row
+    <span className="table-controls" role="group" aria-label={t('table.group')}>
+      <ToolButton label={t('table.addRow')} active={false} onClick={() => run(addRowAfter)}>
+        {t('table.addRowButton')}
       </ToolButton>
-      <ToolButton label="Add column right" active={false} onClick={() => run(addColumnAfter)}>
-        +Col
+      <ToolButton label={t('table.addColumn')} active={false} onClick={() => run(addColumnAfter)}>
+        {t('table.addColumnButton')}
       </ToolButton>
-      <ToolButton label="Delete row" active={false} onClick={() => run(deleteRow)}>
-        −Row
+      <ToolButton label={t('table.deleteRow')} active={false} onClick={() => run(deleteRow)}>
+        {t('table.deleteRowButton')}
       </ToolButton>
-      <ToolButton label="Delete column" active={false} onClick={() => run(deleteColumn)}>
-        −Col
+      <ToolButton label={t('table.deleteColumn')} active={false} onClick={() => run(deleteColumn)}>
+        {t('table.deleteColumnButton')}
       </ToolButton>
       {COLUMN_ALIGNMENTS.map((option) => (
         <ToolButton
           key={option.align}
-          label={option.label}
+          label={t(option.label)}
           active={align === option.align}
           onClick={() => run(alignColumn(align === option.align ? null : option.align))}
         >
           {option.icon}
         </ToolButton>
       ))}
-      <ToolButton label="Delete table" active={false} onClick={() => run(deleteTable)}>
-        ✕ Table
+      <ToolButton label={t('table.delete')} active={false} onClick={() => run(deleteTable)}>
+        {t('table.deleteButton')}
       </ToolButton>
     </span>
   )

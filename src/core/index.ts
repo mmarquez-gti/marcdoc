@@ -7,8 +7,7 @@ export * from './assets/paths'
 export * from './export/formats'
 
 /** Formats the window title for a document, marking unsaved changes. */
-export function formatWindowTitle(fileName: string | null, isDirty: boolean): string {
-  const name = fileName ?? 'Untitled'
+export function formatWindowTitle(name: string, isDirty: boolean): string {
   const dirtyMark = isDirty ? '• ' : ''
   return `${dirtyMark}${name} — MarcDoc`
 }

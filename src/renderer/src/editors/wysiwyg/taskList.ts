@@ -17,12 +17,13 @@ export class ListItemView implements NodeView {
     private node: PMNode,
     view: EditorView,
     getPos: () => number | undefined,
+    checkboxLabel: string,
   ) {
     this.dom = document.createElement('li')
     this.checkbox = document.createElement('input')
     this.checkbox.type = 'checkbox'
     this.checkbox.contentEditable = 'false'
-    this.checkbox.setAttribute('aria-label', 'Task done')
+    this.checkbox.setAttribute('aria-label', checkboxLabel)
     this.checkbox.addEventListener('mousedown', (event) => event.preventDefault())
     this.checkbox.addEventListener('click', (event) => {
       event.preventDefault()

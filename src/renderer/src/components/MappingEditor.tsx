@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  checkMappingAgainst,
+  findMappingProblems,
   MAPPING_KEY_INFO,
+  type MappingProblem,
   MAPPING_KEYS,
   type MappingKey,
   type StyleInfo,
   type StyleMapping,
 } from '../../../core/docx'
+import type { MessageKey, Translate } from '../../../shared/i18n'
 import type { TemplateDetails, TemplateInfo } from '../../../shared/ipc'
+import { useT } from '../i18n'
 
 /** Front matter keys offered for cover fields; others typed in the file are kept. */
 const FRONT_MATTER_KEYS = ['title', 'subtitle', 'author', 'date', 'abstract'] as const
@@ -19,6 +22,7 @@ interface MappingEditorProps {
 }
 
 export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorProps) {
+  const t = useT()
   const [details, setDetails] = useState<TemplateDetails | null>(null)
   const [draft, setDraft] = useState<StyleMapping | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -34,12 +38,12 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
   }, [templatePath])
 
   const problems = useMemo(
-    () => (draft && details ? checkMappingAgainst(draft, details.styles) : []),
+    () => (draft && details ? findMappingProblems(draft, details.styles) : []),
     [draft, details],
   )
 
   if (!details || !draft) {
-    return <p role="status">{error ?? 'Reading template…'}</p>
+    return <p role="status">{error ?? t('mapping.reading')}</p>
   }
 
   const setStyle = (key: MappingKey, id: string) => {
@@ -71,25 +75,20 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
 
   return (
     <div className="mapping-editor">
-      <h3>Style mapping · {details.template.name}</h3>
-      {!details.editable && (
-        <p className="notice">
-          This template is bundled with MarcDoc and read-only. Use “Choose…” with a copy of it to
-          customize the mapping.
-        </p>
-      )}
+      <h3>{t('mapping.title', { name: details.template.name })}</h3>
+      {!details.editable && <p className="notice">{t('mapping.readOnly')}</p>}
       {details.mappingError && (
-        <p className="notice">The current mapping file is invalid: {details.mappingError}</p>
+        <p className="notice">{t('mapping.invalidFile', { error: details.mappingError })}</p>
       )}
 
       <fieldset disabled={!details.editable}>
-        <legend>Markdown element → template style</legend>
+        <legend>{t('mapping.elements')}</legend>
         <div className="mapping-grid">
           {MAPPING_KEYS.map((key) => (
             <label key={key}>
-              <span>{MAPPING_KEY_INFO[key].label}</span>
+              <span>{t(`mapping.key.${key}`)}</span>
               <StyleSelect
-                label={MAPPING_KEY_INFO[key].label}
+                label={t(`mapping.key.${key}`)}
                 styles={details.styles.filter(
                   (style) => style.type === MAPPING_KEY_INFO[key].styleType,
                 )}
@@ -102,29 +101,30 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
       </fieldset>
 
       <fieldset disabled={!details.editable}>
-        <legend>Body and cover</legend>
+        <legend>{t('mapping.bodyAndCover')}</legend>
         <label className="mapping-row">
-          <span>Body placeholder</span>
+          <span>{t('mapping.bodyPlaceholder')}</span>
           <input
-            aria-label="Body placeholder"
+            aria-label={t('mapping.bodyPlaceholder')}
             value={draft.bodyPlaceholder}
             onChange={(event) => setDraft({ ...draft, bodyPlaceholder: event.target.value })}
           />
         </label>
         {details.coverTags.length === 0 ? (
-          <small>The template has no content controls, so there is no cover to fill.</small>
+          <small>{t('mapping.noCover')}</small>
         ) : (
           details.coverTags.map((tag) => (
             <label key={tag} className="mapping-row">
               <span>
-                Cover field <code>{tag}</code>
+                {t('mapping.coverField', { tag: '' })}
+                <code>{tag}</code>
               </span>
               <select
-                aria-label={`Cover field ${tag}`}
+                aria-label={t('mapping.coverField', { tag })}
                 value={draft.cover[tag] ?? ''}
                 onChange={(event) => setCover(tag, event.target.value)}
               >
-                <option value="">Leave as in the template</option>
+                <option value="">{t('mapping.coverLeave')}</option>
                 {[
                   ...new Set([
                     ...FRONT_MATTER_KEYS,
@@ -132,7 +132,7 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
                   ]),
                 ].map((key) => (
                   <option key={key} value={key}>
-                    Front matter “{key}”
+                    {t('mapping.frontMatterKey', { key })}
                   </option>
                 ))}
               </select>
@@ -144,7 +144,7 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
       {problems.length > 0 && (
         <ul className="mapping-problems" role="alert">
           {problems.map((problem) => (
-            <li key={problem}>{problem}</li>
+            <li key={problem.key}>{describeProblem(problem, t)}</li>
           ))}
         </ul>
       )}
@@ -156,7 +156,7 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
 
       <div className="dialog-actions">
         <button type="button" onClick={onClose}>
-          Back
+          {t('common.back')}
         </button>
         <button
           type="button"
@@ -164,11 +164,23 @@ export function MappingEditor({ templatePath, onSaved, onClose }: MappingEditorP
           disabled={!details.editable || problems.length > 0 || draft.bodyPlaceholder.trim() === ''}
           onClick={() => void save()}
         >
-          Save mapping
+          {t('mapping.save')}
         </button>
       </div>
     </div>
   )
+}
+
+function describeProblem(problem: MappingProblem, t: Translate): string {
+  const element = t(`mapping.key.${problem.key}`)
+  if (problem.kind === 'missingStyle')
+    return t('mapping.problem.missingStyle', { element, id: problem.id })
+  return t('mapping.problem.wrongType', {
+    element,
+    style: problem.styleName,
+    actual: t(`mapping.styleType.${problem.actual}` as MessageKey),
+    expected: t(`mapping.styleType.${problem.expected}` as MessageKey),
+  })
 }
 
 function StyleSelect({
@@ -182,11 +194,12 @@ function StyleSelect({
   value: string
   onChange: (id: string) => void
 }) {
+  const t = useT()
   const known = styles.some((style) => style.id === value)
   return (
     <select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
-      <option value="">Pandoc’s style</option>
-      {value && !known && <option value={value}>⚠ {value} (not in template)</option>}
+      <option value="">{t('mapping.pandocStyle')}</option>
+      {value && !known && <option value={value}>{t('mapping.missingStyle', { id: value })}</option>}
       {styles.map((style) => (
         <option key={style.id} value={style.id}>
           {style.name === style.id ? style.name : `${style.name} (${style.id})`}

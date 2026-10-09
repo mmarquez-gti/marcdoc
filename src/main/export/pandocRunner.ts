@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { UserError } from '../userError'
 
 const DEFAULT_TIMEOUT_MS = 120_000
 const MAX_ERROR_CHARS = 2000
@@ -45,12 +46,9 @@ export function runPandoc(
     child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk))
     child.on('error', (error: NodeJS.ErrnoException) =>
       reject(
-        new PandocError(
-          error.code === 'ENOENT'
-            ? 'Pandoc is not installed or not on the PATH. Install it from https://pandoc.org/installing.html.'
-            : `Could not run Pandoc: ${error.message}`,
-          '',
-        ),
+        error.code === 'ENOENT'
+          ? new UserError('error.pandocMissing')
+          : new PandocError(`Could not run Pandoc: ${error.message}`, ''),
       ),
     )
     child.on('close', (code, signal) => {

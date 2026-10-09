@@ -1,7 +1,7 @@
 import { dropCursor } from 'prosemirror-dropcursor'
 import { gapCursor } from 'prosemirror-gapcursor'
 import { history } from 'prosemirror-history'
-import { Slice } from 'prosemirror-model'
+import { Slice, type Node as PMNode } from 'prosemirror-model'
 import { EditorState, type Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
@@ -14,6 +14,8 @@ import { buildTablePlugins } from './tables'
 import { imageFiles, insertImages } from './insertions'
 import { ImageView, MathBlockView, MathInlineView } from './nodeViews'
 import { ListItemView } from './taskList'
+import type { Translate } from '../../../../shared/i18n'
+import { useT } from '../../i18n'
 
 /** Marks transactions that load content from outside the editor; they are not reported back. */
 const EXTERNAL_UPDATE = 'marcdoc-external-update'
@@ -38,6 +40,24 @@ function applyExternalMarkdown(view: EditorView, markdown: string, sources: Bloc
   }
   // Blocks the diff kept may have been reformatted in the source (e.g. `*a*` to `_a_`).
   sources.adopt(parsed, view.state.doc)
+}
+
+/** Editor props that contain interface texts. */
+function localizedProps(t: Translate) {
+  return {
+    attributes: {
+      'aria-label': t('editor.document'),
+      class: 'wysiwyg-content',
+      spellcheck: 'true',
+    },
+    nodeViews: {
+      list_item: (node: PMNode, nodeView: EditorView, getPos: () => number | undefined) =>
+        new ListItemView(node, nodeView, getPos, t('format.taskDone')),
+      image: (node: PMNode) => new ImageView(node),
+      math_inline: (node: PMNode) => new MathInlineView(node),
+      math_block: (node: PMNode) => new MathBlockView(node),
+    },
+  }
 }
 
 /** Position at the top of the visible area: a Markdown block index plus how far into it (0..1). */
@@ -87,6 +107,9 @@ export function WysiwygView({ documentKey, value, onChange, onError, ref }: Wysi
   // Source edit waiting for the debounce; flushed before the user interacts with this view.
   const pendingRef = useRef<string | null>(null)
   const sourcesRef = useRef(new BlockSources())
+  const t = useT()
+  // The view is created once per document; texts in it follow the language through setProps.
+  const tRef = useRef(t)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorState, setEditorState] = useState<EditorState | null>(null)
   // Kept in state as well, because the toolbar renders from it.
@@ -113,20 +136,14 @@ export function WysiwygView({ documentKey, value, onChange, onError, ref }: Wysi
   }
 
   useEffect(() => {
-    // Re-serializes only the blocks that changed since the previous keystroke.
     // Original text of each block, so unedited blocks keep their formatting (PLAN.md H4.1).
     const sources = new BlockSources()
     sourcesRef.current = sources
+    // Re-serializes only the blocks that changed since the previous keystroke.
     const serialize = createIncrementalSerializer(sources)
     const view = new EditorView(hostRef.current!, {
       state: createState(value, sources),
-      attributes: { 'aria-label': 'Document', class: 'wysiwyg-content', spellcheck: 'true' },
-      nodeViews: {
-        list_item: (node, nodeView, getPos) => new ListItemView(node, nodeView, getPos),
-        image: (node) => new ImageView(node),
-        math_inline: (node) => new MathInlineView(node),
-        math_block: (node) => new MathBlockView(node),
-      },
+      ...localizedProps(tRef.current),
       handleDOMEvents: {
         // A pending source edit must land before any edit here is built on the old document.
         focus: () => flushPending(),
@@ -192,6 +209,11 @@ export function WysiwygView({ documentKey, value, onChange, onError, ref }: Wysi
     // flushPending and cancelPending only touch refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
+
+  useEffect(() => {
+    tRef.current = t
+    viewRef.current?.setProps(localizedProps(t))
+  }, [t])
 
   useImperativeHandle(
     ref,

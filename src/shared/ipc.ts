@@ -16,10 +16,13 @@ export const IpcChannel = {
   ChooseLatexTemplate: 'latex-template:choose',
   SaveMapping: 'template:save-mapping',
   MenuCommand: 'menu:command',
+  GetLocale: 'locale:get',
+  LocaleChanged: 'locale:changed',
 } as const
 
 import type { StyleInfo, StyleMapping } from '../core/docx'
 import type { ExportFormat } from '../core/export/formats'
+import type { Locale } from './i18n'
 
 export type ViewMode = 'split' | 'wysiwyg' | 'source'
 
@@ -116,6 +119,10 @@ export interface MarcDocApi {
   saveMapping(path: string, mapping: StyleMapping): Promise<TemplateInfo>
   /** Asks where to save, then exports; resolves to null if the user cancels the dialog. */
   exportDocument(request: ExportRequest): Promise<ExportResult | null>
+  /** Interface language at startup. */
+  readonly initialLocale: Locale
+  /** Subscribes to language changes made from the menu; returns an unsubscribe function. */
+  onLocaleChange(listener: (locale: Locale) => void): () => void
   /** Subscribes to menu commands; returns an unsubscribe function. */
   onMenuCommand(listener: (command: MenuCommand) => void): () => void
 }

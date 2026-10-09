@@ -47,6 +47,8 @@ describe('AssetService', () => {
 
   it('requires the document to be saved before importing', async () => {
     const unsaved = new AssetService(() => null)
-    await expect(unsaved.import('a.png', PNG_BYTES)).rejects.toThrow('Save the document')
+    await expect(unsaved.import('a.png', PNG_BYTES)).rejects.toMatchObject({
+      key: 'error.saveBeforeImages',
+    })
   })
 })

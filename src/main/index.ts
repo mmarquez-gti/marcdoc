@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, Menu, protocol, shell } from 'electron'
 import { ASSET_PROTOCOL, formatWindowTitle } from '../core'
+import { LocaleController } from './locale'
 import { registerIpcHandlers, type WindowState } from './ipc'
 import { buildApplicationMenu } from './menu'
 import { ExportService } from './export/exportService'
@@ -8,22 +9,27 @@ import { resourcesDir } from './export/resources'
 import { AssetService } from './services/assetService'
 import { FileService } from './services/fileService'
 import { LatexTemplateService } from './services/latexTemplateService'
+import { SettingsService } from './services/settingsService'
 import { TemplateService } from './services/templateService'
 
 const DEFAULT_WINDOW_WIDTH = 1280
 const DEFAULT_WINDOW_HEIGHT = 800
 const DISCARD_BUTTON = 0
 
+// MARCDOC_USER_DATA keeps settings out of the user's profile (used by the end-to-end tests).
+const userDataOverride = process.env['MARCDOC_USER_DATA']
+if (userDataOverride) app.setPath('userData', userDataOverride)
+
 // Must happen before the app is ready; `standard` gives the scheme normal URL parsing.
 protocol.registerSchemesAsPrivileged([
   { scheme: ASSET_PROTOCOL, privileges: { standard: true, secure: true } },
 ])
 
-function createMainWindow(): BrowserWindow {
+function createMainWindow(i18n: LocaleController): BrowserWindow {
   const window = new BrowserWindow({
     width: DEFAULT_WINDOW_WIDTH,
     height: DEFAULT_WINDOW_HEIGHT,
-    title: formatWindowTitle(null, false),
+    title: formatWindowTitle(i18n.t('app.untitled'), false),
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -40,8 +46,13 @@ function createMainWindow(): BrowserWindow {
   const exporter = new ExportService(resourcesDir())
   const templates = new TemplateService(join(resourcesDir(), 'templates/docx'))
   const latexTemplates = new LatexTemplateService(join(resourcesDir(), 'templates/latex'))
-  registerIpcHandlers(window, { files, assets, exporter, templates, latexTemplates }, state)
-  Menu.setApplicationMenu(buildApplicationMenu(window))
+  registerIpcHandlers(window, { files, assets, exporter, templates, latexTemplates }, state, i18n)
+  const updateMenu = () =>
+    Menu.setApplicationMenu(
+      buildApplicationMenu(window, i18n.t, i18n.locale, (locale) => void i18n.set(locale)),
+    )
+  i18n.onChange(updateMenu)
+  updateMenu()
 
   window.once('ready-to-show', () => window.show())
 
@@ -49,11 +60,11 @@ function createMainWindow(): BrowserWindow {
     if (!state.isDirty) return
     const choice = dialog.showMessageBoxSync(window, {
       type: 'warning',
-      buttons: ['Discard changes', 'Cancel'],
+      buttons: [i18n.t('dialog.discard'), i18n.t('common.cancel')],
       defaultId: 1,
       cancelId: 1,
-      message: 'This document has unsaved changes.',
-      detail: 'If you close the window, your changes will be lost.',
+      message: i18n.t('dialog.unsavedMessage'),
+      detail: i18n.t('dialog.unsavedDetail'),
     })
     if (choice !== DISCARD_BUTTON) event.preventDefault()
   })
@@ -77,8 +88,15 @@ function createMainWindow(): BrowserWindow {
   return window
 }
 
-void app.whenReady().then(() => {
-  createMainWindow()
+void app.whenReady().then(async () => {
+  const settings = new SettingsService(join(app.getPath('userData'), 'settings.json'))
+  // MARCDOC_LOCALE forces a language (used by the end-to-end tests).
+  const i18n = await LocaleController.create(
+    settings,
+    app.getLocale(),
+    process.env['MARCDOC_LOCALE'],
+  )
+  createMainWindow(i18n)
 })
 
 app.on('window-all-closed', () => {

@@ -1,5 +1,5 @@
-import { EXPORT_FORMATS } from '../../../core/export/formats'
 import type { ExportStatus } from '../hooks/useExport'
+import { useT } from '../i18n'
 
 interface ExportStatusBannerProps {
   readonly status: ExportStatus
@@ -7,11 +7,12 @@ interface ExportStatusBannerProps {
 }
 
 export function ExportStatusBanner({ status, onDismiss }: ExportStatusBannerProps) {
+  const t = useT()
   if (status.kind === 'idle') return null
   if (status.kind === 'running') {
     return (
       <div className="banner banner-info" role="status" aria-live="polite">
-        Exporting to {EXPORT_FORMATS[status.format].label}…
+        {t('export.running', { format: t(`export.format.${status.format}`) })}
       </div>
     )
   }
@@ -24,12 +25,12 @@ export function ExportStatusBanner({ status, onDismiss }: ExportStatusBannerProp
       <div>
         {failed ? (
           <>
-            <strong>Export failed.</strong>
+            <strong>{t('export.failed')}</strong>
             <pre className="banner-details">{status.message}</pre>
           </>
         ) : (
           <>
-            Exported to <code>{status.outputPath}</code>
+            {t('export.done')} <code>{status.outputPath}</code>
             {status.warnings.length > 0 && (
               <ul>
                 {status.warnings.map((warning) => (
@@ -40,7 +41,7 @@ export function ExportStatusBanner({ status, onDismiss }: ExportStatusBannerProp
           </>
         )}
       </div>
-      <button type="button" onClick={onDismiss} aria-label="Dismiss">
+      <button type="button" onClick={onDismiss} aria-label={t('common.dismiss')}>
         ×
       </button>
     </div>
