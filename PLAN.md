@@ -295,3 +295,11 @@ Preservación del formato original del .md, i18n, otros sistemas operativos.
 | 09/10/2026 | H0.2 | ADR-0001: ProseMirror directo + remark (10/10 del corpus sin pérdida). MVP desplazado a ≈ 16/05/2027 |
 | 09/10/2026 | H0.3 | ADR-0002: fusión sobre la plantilla + normalizador OOXML; 0 errores en el Open XML SDK. Pendiente: revisión en Word Online |
 | 09/10/2026 | **Fase 0 completada** | Siguiente: H1.1 (shell de la app, abrir/guardar, detección de Pandoc/LaTeX) |
+| 09/10/2026 | H1.1 | Abrir/guardar con lista de rutas permitidas, aviso de cambios sin guardar, detección de Pandoc/LuaLaTeX. Playwright adelantado desde H1.7 para verificar cada hito |
+| 09/10/2026 | H1.2 | Vista de código con CodeMirror 6 (resaltado, búsqueda, historial por documento) |
+| 09/10/2026 | H1.3 | Vista WYSIWYG con ProseMirror: barra de formato, atajos, *input rules*; conversión en `core` sin pérdida (lo no modelado se conserva literal) |
+| 09/10/2026 | H1.4 | Tablas GFM (`prosemirror-tables`, alineación por columna), listas de tareas con casilla, tachado |
+| 09/10/2026 | H1.5 | Imágenes vía protocolo `marcdoc-asset` (solo imágenes del directorio del documento), copia a `assets/`, KaTeX, notas al pie, front matter. `npm audit`: 0 vulnerabilidades |
+| 09/10/2026 | H1.6 | Sincronización por bloques con *debounce*; serialización incremental (~53 ms → ~0,5 ms por pulsación en ~11 000 palabras). `sourceLine` eliminado (ver ADR-0001) |
+| 09/10/2026 | H1.7 | Scroll sincronizado, modos de vista, prueba de aceptación e2e |
+| 09/10/2026 | **Fase 1 completada** | 109 tests unitarios y 29 e2e en verde. Siguiente: H2.1 (exportación a .tex y PDF) |
