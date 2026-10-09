@@ -3,6 +3,8 @@ import { app, BrowserWindow, dialog, Menu, protocol, shell } from 'electron'
 import { ASSET_PROTOCOL, formatWindowTitle } from '../core'
 import { registerIpcHandlers, type WindowState } from './ipc'
 import { buildApplicationMenu } from './menu'
+import { ExportService } from './export/exportService'
+import { resourcesDir } from './export/resources'
 import { AssetService } from './services/assetService'
 import { FileService } from './services/fileService'
 
@@ -33,7 +35,8 @@ function createMainWindow(): BrowserWindow {
   const files = new FileService()
   const assets = new AssetService(() => files.currentPath)
   protocol.handle(ASSET_PROTOCOL, (request) => assets.serve(request.url))
-  registerIpcHandlers(window, { files, assets }, state)
+  const exporter = new ExportService(resourcesDir())
+  registerIpcHandlers(window, { files, assets, exporter }, state)
   Menu.setApplicationMenu(buildApplicationMenu(window))
 
   window.once('ready-to-show', () => window.show())

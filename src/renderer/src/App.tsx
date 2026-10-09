@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { fileNameOf } from '../../core'
 import type { ViewMode } from '../../shared/ipc'
+import { ExportStatusBanner } from './components/ExportStatusBanner'
 import { ToolchainBanner } from './components/ToolchainBanner'
 import { Toolbar } from './components/Toolbar'
 import { CodeView, type CodeViewHandle } from './editors/code/CodeView'
 import { WysiwygView, type WysiwygViewHandle } from './editors/wysiwyg/WysiwygView'
 import { useDocument } from './hooks/useDocument'
+import { useExport } from './hooks/useExport'
 import { useScrollSync } from './hooks/useScrollSync'
 
 export function App() {
@@ -14,6 +16,7 @@ export function App() {
   const codeRef = useRef<CodeViewHandle>(null)
   const wysiwygRef = useRef<WysiwygViewHandle>(null)
   const documentKey = String(document.state.generation)
+  const exporter = useExport(document.state)
 
   useScrollSync(document.state.content, documentKey, viewMode === 'split', codeRef, wysiwygRef)
 
@@ -37,6 +40,7 @@ export function App() {
         onViewModeChange={setViewMode}
       />
       <ToolchainBanner />
+      <ExportStatusBanner status={exporter.status} onDismiss={exporter.dismiss} />
       {document.error && (
         <div className="banner banner-error" role="alert">
           <span>{document.error}</span>

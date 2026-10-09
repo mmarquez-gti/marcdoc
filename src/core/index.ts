@@ -4,6 +4,7 @@ export * from './document/state'
 export * from './toolchain/tools'
 export * from './toolchain/version'
 export * from './assets/paths'
+export * from './export/formats'
 
 /** Formats the window title for a document, marking unsaved changes. */
 export function formatWindowTitle(fileName: string | null, isDirty: boolean): string {

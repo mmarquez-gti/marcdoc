@@ -1,5 +1,8 @@
+import { dirname, join } from 'node:path'
 import { dialog, ipcMain, type BrowserWindow } from 'electron'
-import { IpcChannel } from '../shared/ipc'
+import { defaultOutputName, EXPORT_FORMATS } from '../core'
+import { IpcChannel, type ExportRequest } from '../shared/ipc'
+import type { ExportService } from './export/exportService'
 import type { AssetService } from './services/assetService'
 import type { FileService } from './services/fileService'
 import { detectToolchain } from './services/toolchainDetector'
@@ -16,11 +19,12 @@ export interface WindowState {
 export interface Services {
   readonly files: FileService
   readonly assets: AssetService
+  readonly exporter: ExportService
 }
 
 export function registerIpcHandlers(
   window: BrowserWindow,
-  { files, assets }: Services,
+  { files, assets, exporter }: Services,
   state: WindowState,
 ): void {
   ipcMain.handle(IpcChannel.OpenDocument, async () => {
@@ -52,6 +56,20 @@ export function registerIpcHandlers(
   })
 
   ipcMain.handle(IpcChannel.GetToolchainStatus, () => detectToolchain())
+
+  ipcMain.handle(IpcChannel.ExportDocument, async (_event, request: ExportRequest) => {
+    const format = EXPORT_FORMATS[request.format]
+    if (!format) throw new Error(`Unknown export format: ${String(request.format)}`)
+    const defaultName = defaultOutputName(request.documentPath, request.format)
+    const result = await dialog.showSaveDialog(window, {
+      defaultPath: request.documentPath
+        ? join(dirname(request.documentPath), defaultName)
+        : defaultName,
+      filters: [{ name: format.label, extensions: [format.extension] }],
+    })
+    if (result.canceled || !result.filePath) return null
+    return exporter.export({ ...request, outputPath: result.filePath })
+  })
 
   ipcMain.handle(IpcChannel.ImportAsset, (_event, fileName: string, bytes: Uint8Array) =>
     assets.import(fileName, bytes),

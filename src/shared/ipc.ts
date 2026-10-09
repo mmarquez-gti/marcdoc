@@ -8,12 +8,28 @@ export const IpcChannel = {
   SetDirty: 'document:set-dirty',
   GetToolchainStatus: 'toolchain:status',
   ImportAsset: 'asset:import',
+  ExportDocument: 'document:export',
   MenuCommand: 'menu:command',
 } as const
 
+import type { ExportFormat } from '../core/export/formats'
+
 export type ViewMode = 'split' | 'wysiwyg' | 'source'
 
-export type MenuCommand = 'open' | 'save' | 'save-as' | `view-${ViewMode}`
+export type MenuCommand =
+  'open' | 'save' | 'save-as' | `view-${ViewMode}` | `export-${ExportFormat}`
+
+export interface ExportRequest {
+  readonly format: ExportFormat
+  readonly markdown: string
+  readonly documentPath: string | null
+}
+
+export interface ExportResult {
+  readonly outputPath: string
+  /** Non-fatal problems reported by the tools, e.g. an image that could not be found. */
+  readonly warnings: readonly string[]
+}
 
 export interface OpenedDocument {
   readonly path: string
@@ -52,6 +68,8 @@ export interface MarcDocApi {
    * Markdown. Fails if the document has never been saved.
    */
   importAsset(fileName: string, bytes: Uint8Array): Promise<string>
+  /** Asks where to save, then exports; resolves to null if the user cancels the dialog. */
+  exportDocument(request: ExportRequest): Promise<ExportResult | null>
   /** Subscribes to menu commands; returns an unsubscribe function. */
   onMenuCommand(listener: (command: MenuCommand) => void): () => void
 }

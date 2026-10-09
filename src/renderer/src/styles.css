@@ -68,6 +68,22 @@ body,
   background: var(--error-bg);
 }
 
+.banner-info {
+  background: color-mix(in srgb, Highlight 15%, Canvas);
+}
+
+.banner-success {
+  background: color-mix(in srgb, #2e7d32 18%, Canvas);
+}
+
+.banner-details {
+  max-height: 10rem;
+  overflow: auto;
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+
 .editor-area {
   flex: 1;
   min-height: 0;

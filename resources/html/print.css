@@ -1,0 +1,83 @@
+/* Print stylesheet for "PDF (HTML)" export. Mirrors the document view. */
+@page {
+  size: A4;
+  margin: 2.5cm;
+}
+
+html {
+  font-family: Carlito, Calibri, 'Liberation Sans', sans-serif;
+  font-size: 11pt;
+  line-height: 1.45;
+  color: #000;
+}
+
+body {
+  margin: 0;
+  max-width: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: Caladea, Cambria, 'Liberation Serif', serif;
+  color: #1f4e79;
+  break-after: avoid;
+}
+
+header#title-block-header .title {
+  font-size: 2em;
+}
+
+pre,
+code {
+  font-family: 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  padding: 0.5em 0.7em;
+  background: #f2f2f2;
+  white-space: pre-wrap;
+  break-inside: avoid;
+}
+
+blockquote {
+  margin-left: 0;
+  padding-left: 1em;
+  border-left: 3px solid #1f4e79;
+  color: #404040;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  break-inside: avoid;
+}
+
+th,
+td {
+  padding: 0.3em 0.6em;
+  border: 1px solid #808080;
+}
+
+th {
+  background: #1f4e79;
+  color: #fff;
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: #0563c1;
+}
+
+math[display='block'] {
+  margin: 1em 0;
+}
+
+.footnotes {
+  font-size: 0.9em;
+}

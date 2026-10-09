@@ -1,4 +1,5 @@
 import { Menu, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
+import { EXPORT_FORMATS, type ExportFormat } from '../core/export/formats'
 import { IpcChannel, type MenuCommand } from '../shared/ipc'
 
 export function buildApplicationMenu(window: BrowserWindow): Menu {
@@ -17,6 +18,15 @@ export function buildApplicationMenu(window: BrowserWindow): Menu {
           label: 'Save As…',
           accelerator: 'CmdOrCtrl+Shift+S',
           click: send('save-as'),
+        },
+        { type: 'separator' },
+        {
+          label: 'Export',
+          submenu: (Object.keys(EXPORT_FORMATS) as ExportFormat[]).map((format) => ({
+            id: `export-${format}`,
+            label: `${EXPORT_FORMATS[format].label}…`,
+            click: send(`export-${format}`),
+          })),
         },
         { type: 'separator' },
         { role: 'quit' },
