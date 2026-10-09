@@ -17,6 +17,7 @@
     "tests/e2e/**/*",
     "tests/integration/**/*",
     "vitest.integration.config.ts",
+    "scripts/**/*.ts",
     "playwright.config.ts"
   ]
 }
