@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   defaultOutputName,
   docxArgs,
+  isPandocTemplate,
+  texInputsFor,
   latexArgs,
   pdfViaLatexArgs,
   printableHtmlArgs,
@@ -54,5 +56,23 @@ describe('defaultOutputName', () => {
 
   it('names unsaved documents "Untitled"', () => {
     expect(defaultOutputName(null, 'pdf-latex')).toBe('Untitled.pdf')
+  })
+})
+
+describe('LaTeX templates', () => {
+  it('passes a custom template to Pandoc only when one is chosen', () => {
+    expect(pdfViaLatexArgs(invocation, '/t/thesis.latex')).toContain('--template=/t/thesis.latex')
+    expect(latexArgs(invocation).some((arg) => arg.startsWith('--template'))).toBe(false)
+  })
+
+  it('recognizes Pandoc templates by their body variable', () => {
+    expect(isPandocTemplate('\\documentclass{article}\n$body$')).toBe(true)
+    expect(isPandocTemplate('\\documentclass{article}\n${body}')).toBe(true)
+    expect(isPandocTemplate('\\documentclass{article}\nHello')).toBe(false)
+  })
+
+  it('searches the template folder first and keeps the standard TeX paths', () => {
+    expect(texInputsFor('/t', undefined)).toBe('/t//:')
+    expect(texInputsFor('/t', '/x:')).toBe('/t//:/x:')
   })
 })

@@ -30,25 +30,51 @@ export interface PandocInvocation {
   readonly fallbackTitle: string
 }
 
-export function latexArgs({ resourcePath, outputPath }: PandocInvocation): string[] {
+/** `templatePath` is a Pandoc LaTeX template; null uses Pandoc's default template. */
+export function latexArgs(
+  { resourcePath, outputPath }: PandocInvocation,
+  templatePath: string | null = null,
+): string[] {
   return [
     `--from=${PANDOC_INPUT_FORMAT}`,
     '--to=latex',
     '--standalone',
+    ...templateArg(templatePath),
     `--resource-path=${resourcePath}`,
     ...LATEX_VARIABLES,
     `--output=${outputPath}`,
   ]
 }
 
-export function pdfViaLatexArgs({ resourcePath, outputPath }: PandocInvocation): string[] {
+export function pdfViaLatexArgs(
+  { resourcePath, outputPath }: PandocInvocation,
+  templatePath: string | null = null,
+): string[] {
   return [
     `--from=${PANDOC_INPUT_FORMAT}`,
     '--pdf-engine=lualatex',
+    ...templateArg(templatePath),
     `--resource-path=${resourcePath}`,
     ...LATEX_VARIABLES,
     `--output=${outputPath}`,
   ]
+}
+
+function templateArg(templatePath: string | null): string[] {
+  return templatePath ? [`--template=${templatePath}`] : []
+}
+
+/** Pandoc templates insert the document with `$body$`; a file without it is not one. */
+export function isPandocTemplate(content: string): boolean {
+  return /\$body\$|\$\{body\}/.test(content)
+}
+
+/**
+ * TEXINPUTS that lets LaTeX find classes and packages stored next to a template (`//` searches
+ * subdirectories; the trailing `:` keeps the standard TeX directories).
+ */
+export function texInputsFor(templateDir: string, inherited: string | undefined): string {
+  return `${templateDir}//:${inherited ?? ''}`
 }
 
 /** Self-contained HTML (images and CSS inlined, MathML for formulas) ready to print to PDF. */
