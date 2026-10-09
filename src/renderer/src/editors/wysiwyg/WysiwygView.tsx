@@ -9,6 +9,8 @@ import { FormatToolbar } from './FormatToolbar'
 import { buildInputRules } from './inputRules'
 import { buildKeymaps } from './keymap'
 import { buildTablePlugins } from './tables'
+import { imageFiles, insertImages } from './insertions'
+import { ImageView, MathBlockView, MathInlineView } from './nodeViews'
 import { ListItemView } from './taskList'
 
 /** Marks transactions that load content from outside the editor; they are not reported back. */
@@ -19,6 +21,8 @@ interface WysiwygViewProps {
   readonly documentKey: string
   readonly value: string
   readonly onChange: (value: string) => void
+  /** Reports problems the user must see, e.g. an image pasted into an unsaved document. */
+  readonly onError: (message: string) => void
 }
 
 function createState(markdown: string): EditorState {
@@ -36,10 +40,11 @@ function createState(markdown: string): EditorState {
   })
 }
 
-export function WysiwygView({ documentKey, value, onChange }: WysiwygViewProps) {
+export function WysiwygView({ documentKey, value, onChange, onError }: WysiwygViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
+  const onErrorRef = useRef(onError)
   // Markdown this view last produced or loaded; equal incoming values need no reload.
   const lastMarkdownRef = useRef(value)
   const [editorState, setEditorState] = useState<EditorState | null>(null)
@@ -48,7 +53,8 @@ export function WysiwygView({ documentKey, value, onChange }: WysiwygViewProps) 
 
   useEffect(() => {
     onChangeRef.current = onChange
-  }, [onChange])
+    onErrorRef.current = onError
+  }, [onChange, onError])
 
   useEffect(() => {
     const view = new EditorView(hostRef.current!, {
@@ -56,6 +62,31 @@ export function WysiwygView({ documentKey, value, onChange }: WysiwygViewProps) 
       attributes: { 'aria-label': 'Document', class: 'wysiwyg-content', spellcheck: 'true' },
       nodeViews: {
         list_item: (node, nodeView, getPos) => new ListItemView(node, nodeView, getPos),
+        image: (node) => new ImageView(node),
+        math_inline: (node) => new MathInlineView(node),
+        math_block: (node) => new MathBlockView(node),
+      },
+      handlePaste(pasteView, event) {
+        const files = imageFiles(event.clipboardData)
+        if (files.length === 0) return false
+        event.preventDefault()
+        void insertImages(pasteView, files, pasteView.state.selection.from, (message) =>
+          onErrorRef.current(message),
+        )
+        return true
+      },
+      handleDrop(dropView, event) {
+        const files = imageFiles(event.dataTransfer)
+        if (files.length === 0) return false
+        event.preventDefault()
+        const target = dropView.posAtCoords({ left: event.clientX, top: event.clientY })
+        void insertImages(
+          dropView,
+          files,
+          target?.pos ?? dropView.state.selection.from,
+          (message) => onErrorRef.current(message),
+        )
+        return true
       },
       dispatchTransaction(transaction: Transaction) {
         const next = view.state.apply(transaction)

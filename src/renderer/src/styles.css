@@ -308,3 +308,32 @@ body,
 .ProseMirror-focused .ProseMirror-gapcursor {
   display: block;
 }
+
+.wysiwyg-content .math-inline {
+  padding: 0 0.1rem;
+  border-radius: 3px;
+}
+
+.wysiwyg-content .math-block-view {
+  margin: 1rem 0;
+}
+
+.wysiwyg-content .math-preview {
+  text-align: center;
+  user-select: none;
+}
+
+.wysiwyg-content .math-source {
+  margin-top: 0.25rem;
+  color: var(--muted);
+}
+
+.wysiwyg-content .frontmatter::before {
+  content: 'Document properties (YAML)';
+  display: block;
+  margin-bottom: 0.3rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

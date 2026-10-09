@@ -36,6 +36,17 @@ const horizontalRule = new InputRule(/^(?:---|\*\*\*|___)\s$/, (state, _match, s
   return state.tr.replaceRangeWith($start.before(), $start.after(), nodes.horizontal_rule.create())
 })
 
+// `$x$` becomes inline math. The content must not start or end with a space, so prices like
+// "$5 and $6" stay plain text.
+const inlineMath = new InputRule(
+  /(?:^|[^$\\])\$([^$\s](?:[^$]*[^$\s])?)\$$/,
+  (state, match, start, end) => {
+    const value = match[1]!
+    const mathStart = start + match[0].length - value.length - 2
+    return state.tr.replaceWith(mathStart, end, nodes.math_inline.create({ value }))
+  },
+)
+
 export function buildInputRules(): Plugin {
   return inputRules({
     rules: [
@@ -53,8 +64,10 @@ export function buildInputRules(): Plugin {
         (match) => ({ ordered: true, start: Number(match[1]) === 1 ? null : Number(match[1]) }),
         (match, node) => node.childCount + (node.attrs['start'] ?? 1) === Number(match[1]),
       ),
+      textblockTypeInputRule(/^\$\$\s$/, nodes.math_block),
       horizontalRule,
       taskInputRule,
+      inlineMath,
       markInputRule(/\*\*([^*\s](?:[^*]*[^*\s])?)\*\*$/, marks.strong),
       markInputRule(/(?:^|[^*\w])\*([^*\s](?:[^*]*[^*\s])?)\*$/, marks.emphasis),
       markInputRule(/`([^`]+)`$/, marks.code),

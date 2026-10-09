@@ -31,6 +31,7 @@ export function App() {
           documentKey={String(document.state.generation)}
           value={document.state.content}
           onChange={document.edit}
+          onError={document.reportError}
         />
         <CodeView
           documentKey={String(document.state.generation)}

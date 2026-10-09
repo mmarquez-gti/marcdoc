@@ -26,6 +26,7 @@ import {
   toggleStrong,
 } from './commands'
 import { alignColumn, currentColumnAlign, insertTable, type ColumnAlign } from './tables'
+import { insertFootnote, insertInlineMath, selectedInlineMath, setInlineMath } from './insertions'
 import { isTaskList, toggleTaskList } from './taskList'
 
 const BLOCK_STYLES = [
@@ -45,6 +46,7 @@ interface FormatToolbarProps {
 
 export function FormatToolbar({ view, state }: FormatToolbarProps) {
   const [linkDraft, setLinkDraft] = useState<string | null>(null)
+  const selectedMath = selectedInlineMath(state)
 
   const run = (command: Command) => {
     command(view.state, view.dispatch)
@@ -154,6 +156,24 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
           <button type="submit">Apply</button>
         </form>
       )}
+      {selectedMath === null ? (
+        <ToolButton
+          label="Insert inline math"
+          active={false}
+          onClick={() => run(insertInlineMath('x^2'))}
+        >
+          ∑ Math
+        </ToolButton>
+      ) : (
+        <MathForm
+          key={selectedMath}
+          value={selectedMath}
+          onApply={(value) => run(setInlineMath(value))}
+        />
+      )}
+      <ToolButton label="Insert footnote" active={false} onClick={() => run(insertFootnote)}>
+        ¹ Note
+      </ToolButton>
       {isInTable(state) ? (
         <TableControls state={state} run={run} />
       ) : (
@@ -162,6 +182,27 @@ export function FormatToolbar({ view, state }: FormatToolbarProps) {
         </ToolButton>
       )}
     </div>
+  )
+}
+
+/** Edits the TeX of the selected inline math; remounted (via `key`) when the selection changes. */
+function MathForm({ value, onApply }: { value: string; onApply: (value: string) => void }) {
+  const [draft, setDraft] = useState(value)
+  return (
+    <form
+      className="link-form"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onApply(draft)
+      }}
+    >
+      <input
+        aria-label="TeX formula"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      <button type="submit">Apply</button>
+    </form>
   )
 }
 

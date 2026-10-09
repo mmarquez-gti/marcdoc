@@ -17,6 +17,7 @@ export interface DocumentController {
   save(): Promise<void>
   saveAs(): Promise<void>
   clearError(): void
+  reportError(message: string): void
 }
 
 export function useDocument(): DocumentController {
@@ -98,6 +99,7 @@ export function useDocument(): DocumentController {
 
   const edit = useCallback((content: string) => dispatch({ type: 'edited', content }), [])
   const clearError = useCallback(() => setError(null), [setError])
+  const reportError = useCallback((message: string) => setError(message), [setError])
 
-  return { state, isDirty: dirty, error, edit, open, save, saveAs, clearError }
+  return { state, isDirty: dirty, error, edit, open, save, saveAs, clearError, reportError }
 }
