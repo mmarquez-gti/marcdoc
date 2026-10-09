@@ -2,7 +2,12 @@
 // remaps styles by ID and normalizes the result so it conforms to the OOXML schema.
 import { placeBody, fillCover } from './body'
 import type { StyleMapping } from './mapping'
-import { fixAttributeValues, fixLongHexNumbers, normalizeElementOrder } from './normalize'
+import {
+  fixAttributeValues,
+  fixBookmarkNames,
+  fixLongHexNumbers,
+  normalizeElementOrder,
+} from './normalize'
 import { childElements, elements, Package, relsPathOf, W_NS } from './package'
 import {
   copyRelationships,
@@ -81,6 +86,8 @@ export async function adaptToTemplate(
     styleIdMap,
   )
 
+  fixBookmarkNames(footnotes ? [document, footnotes.footnotes] : [document])
+  if (footnotes) template.writeXml('word/footnotes.xml', footnotes.footnotes)
   const fixedValues = fixAttributeValues(document) + fixAttributeValues(styles)
   const reorderedElements =
     normalizeElementOrder(document).reordered + normalizeElementOrder(styles).reordered

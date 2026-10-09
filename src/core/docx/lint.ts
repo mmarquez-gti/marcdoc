@@ -67,13 +67,22 @@ export async function lintDocx(bytes: Uint8Array): Promise<LintIssue[]> {
   await checkContentTypes(pkg, issues)
   await checkCompatibilityMode(pkg, issues)
 
-  for (const path of pkg.paths().filter((candidate) => STORY_PARTS.test(candidate))) {
+  const storyPaths = pkg.paths().filter((candidate) => STORY_PARTS.test(candidate))
+  const bookmarkNames = new Set<string>()
+  for (const path of storyPaths) {
+    for (const bookmark of descendants(await pkg.readXml(path), W_NS, 'bookmarkStart')) {
+      bookmarkNames.add(wAttr(bookmark, 'name') ?? '')
+    }
+  }
+
+  for (const path of storyPaths) {
     const part = await pkg.readXml(path)
     if (styles) checkStyleReferences(part, path, styles, issues)
     checkNumberingReferences(part, path, numbering, issues)
     await checkRelationships(pkg, part, path, issues)
     checkNamespaces(part, path, issues)
     checkDirectFormatting(part, path, issues)
+    checkInternalLinks(part, path, bookmarkNames, issues)
   }
   return issues
 }
@@ -334,6 +343,36 @@ function checkNamespaces(part: Document, path: string, issues: LintIssue[]): voi
       part: path,
       message: `Elements from unknown namespace "${namespace}" are not marked ignorable.`,
     })
+  }
+}
+
+/** Internal links need a bookmark of that name; Word also rejects names it cannot create. */
+function checkInternalLinks(
+  part: Document,
+  path: string,
+  bookmarks: ReadonlySet<string>,
+  issues: LintIssue[],
+): void {
+  for (const link of descendants(part, W_NS, 'hyperlink')) {
+    const anchor = wAttr(link, 'anchor')
+    if (anchor === null) continue
+    if (!bookmarks.has(anchor)) {
+      issues.push({
+        severity: 'error',
+        part: path,
+        message: `Internal link to "${anchor}" has no bookmark.`,
+      })
+    }
+  }
+  for (const bookmark of descendants(part, W_NS, 'bookmarkStart')) {
+    const name = wAttr(bookmark, 'name') ?? ''
+    if (!name.startsWith('_') && !/^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(name)) {
+      issues.push({
+        severity: 'warning',
+        part: path,
+        message: `Bookmark name "${name}" is not valid in Word.`,
+      })
+    }
   }
 }
 

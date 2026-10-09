@@ -123,3 +123,14 @@ describe('lintDocx footnotes', () => {
     )
   })
 })
+
+describe('lintDocx internal links', () => {
+  it('reports internal links without a bookmark and invalid bookmark names', async () => {
+    const bytes = await docx({
+      body: '<w:p><w:bookmarkStart w:id="1" w:name="fig:a"/><w:bookmarkEnd w:id="1"/><w:hyperlink w:anchor="missing"><w:r><w:t>x</w:t></w:r></w:hyperlink></w:p>',
+    })
+    const found = messages(await lintDocx(bytes))
+    expect(found).toContain('error: Internal link to "missing" has no bookmark.')
+    expect(found).toContain('warning: Bookmark name "fig:a" is not valid in Word.')
+  })
+})

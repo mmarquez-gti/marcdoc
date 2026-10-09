@@ -243,3 +243,41 @@ export function fixAttributeValues(document: Document): number {
   }
   return fixed
 }
+
+/** Word bookmark names: a letter first, then letters, digits or `_`, at most 40 characters. */
+const BOOKMARK_NAME = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
+const MAX_BOOKMARK_LENGTH = 40
+
+/**
+ * Renames bookmarks Word would reject (Pandoc writes ids such as `fig:results`) and updates the
+ * internal links that point to them, in every given part. Hidden bookmarks (`_Toc…`) are kept.
+ * Returns old name -> new name.
+ */
+export function fixBookmarkNames(parts: readonly Document[]): Map<string, string> {
+  const renamed = new Map<string, string>()
+  const taken = new Set<string>()
+  const bookmarks = parts.flatMap((part) => descendants(part, W_NS, 'bookmarkStart'))
+  for (const bookmark of bookmarks) taken.add(bookmark.getAttributeNS(W_NS, 'name') ?? '')
+
+  for (const bookmark of bookmarks) {
+    const name = bookmark.getAttributeNS(W_NS, 'name') ?? ''
+    if (name.startsWith('_') || BOOKMARK_NAME.test(name)) continue
+    let candidate = name.replace(/[^A-Za-z0-9_]/g, '_')
+    if (!/^[A-Za-z]/.test(candidate)) candidate = `b_${candidate}`
+    candidate = candidate.slice(0, MAX_BOOKMARK_LENGTH)
+    for (let index = 2; taken.has(candidate); index++) {
+      const suffix = `_${index}`
+      candidate = candidate.slice(0, MAX_BOOKMARK_LENGTH - suffix.length) + suffix
+    }
+    taken.add(candidate)
+    renamed.set(name, candidate)
+    bookmark.setAttributeNS(W_NS, 'w:name', candidate)
+  }
+  for (const part of parts) {
+    for (const link of descendants(part, W_NS, 'hyperlink')) {
+      const target = renamed.get(link.getAttributeNS(W_NS, 'anchor') ?? '')
+      if (target) link.setAttributeNS(W_NS, 'w:anchor', target)
+    }
+  }
+  return renamed
+}
