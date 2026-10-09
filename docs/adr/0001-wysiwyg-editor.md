@@ -75,3 +75,15 @@ Motivos:
 - **Rendimiento medido** con un documento de unas 11 000 palabras (unas 25–30 páginas):
   - Serializar todo el documento costaba ~53 ms por pulsación en el WYSIWYG. Con la caché por bloque (`createIncrementalSerializer`) cuesta ~0,5 ms.
   - Parsear el Markdown cuesta ~150 ms y se ejecuta con _debounce_ (150 ms) al editar en la vista de código. En documentos grandes puede notarse una pausa al dejar de teclear. Mejora prevista si llega a molestar: parsear en un Web Worker o de forma incremental por bloques.
+
+## Revisión (09/10/2026, hito H4.1): preservación del formato
+
+- **Antes:** al editar en el WYSIWYG se reescribía todo el documento con las reglas de normalización.
+- **Ahora:** solo se reescriben los bloques de primer nivel editados.
+- `BlockSources` (`src/core/markdown/blockSources.ts`) guarda, al parsear, el texto original de cada bloque y los huecos con sus vecinos. Los busca por identidad del nodo y, si deshacer reconstruye un bloque igual, por contenido.
+- No se usa un atributo del nodo porque ProseMirror copia los atributos al editar, y el texto guardado quedaría desfasado.
+- Cuando un cambio del código se aplica por diff, los nodos conservados reciben el texto nuevo con `adopt`. Así, un cambio solo de formato (`*a*` → `_a_`) no se pierde.
+- Sin editar, todo el corpus se reescribe byte a byte igual (test `format-preservation`).
+- **Límites:**
+  - la unidad es el bloque de primer nivel: editar un elemento de una lista normaliza la lista entera;
+  - antes de un bloque editado solo se reutiliza el hueco original si contiene una línea en blanco.

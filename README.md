@@ -14,7 +14,7 @@ LaTeX and Word (.docx), including export that follows the styles of a Word templ
   rendered with KaTeX), footnotes and YAML front matter.
 - Nothing is lost: constructs the document view does not model (e.g. raw HTML) are kept
   verbatim and edited in the source view. Opening a file never rewrites it; editing in the
-  document view writes normalized Markdown.
+  document view rewrites only the blocks you edit, the rest keeps its original formatting.
 - Images use paths relative to the document. Pasted or dropped images are copied into an
   `assets/` folder next to it (save the document first).
 - Citations `[@key, p. 3]` formatted by Pandoc's citeproc from the `bibliography` (BibTeX,
