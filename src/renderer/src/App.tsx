@@ -2,6 +2,7 @@ import { fileNameOf } from '../../core'
 import { ToolchainBanner } from './components/ToolchainBanner'
 import { Toolbar } from './components/Toolbar'
 import { CodeView } from './editors/code/CodeView'
+import { WysiwygView } from './editors/wysiwyg/WysiwygView'
 import { useDocument } from './hooks/useDocument'
 
 export function App() {
@@ -26,6 +27,11 @@ export function App() {
         </div>
       )}
       <main className="editor-area">
+        <WysiwygView
+          documentKey={String(document.state.generation)}
+          value={document.state.content}
+          onChange={document.edit}
+        />
         <CodeView
           documentKey={String(document.state.generation)}
           value={document.state.content}
