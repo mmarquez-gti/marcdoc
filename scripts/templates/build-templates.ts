@@ -302,7 +302,8 @@ function mappingJson(spec: TemplateSpec): string {
 const ENTRY_DATE = new Date('2026-01-01T00:00:00Z')
 
 function add(zip: JSZip, name: string, data: string): void {
-  zip.file(name, data, { date: ENTRY_DATE })
+  // Without createFolders, JSZip would add folder entries stamped with the current time.
+  zip.file(name, data, { date: ENTRY_DATE, createFolders: false })
 }
 
 async function buildPackage(spec: TemplateSpec, isTemplate: boolean): Promise<Uint8Array> {
