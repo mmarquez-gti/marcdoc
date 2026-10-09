@@ -1,6 +1,6 @@
 # ADR-0001: Editor WYSIWYG
 
-- **Estado:** propuesto
+- **Estado:** aceptado (09/10/2026)
 - **Fecha:** 09/10/2026
 - **Hito:** H0.2
 

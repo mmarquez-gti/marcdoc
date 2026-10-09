@@ -42,7 +42,7 @@ Es la decisión más arriesgada. Se cerrará con un *spike* en la fase 0 (hito H
 | **Tiptap** | Muy buena experiencia de desarrollo, extensiones maduras, mucha documentación, React oficial | Markdown no es su modelo nativo: la conversión depende de extensiones adicionales. No he verificado el estado actual de su soporte Markdown oficial |
 | **ProseMirror directo + remark** | Control total del esquema y del puente mdast ↔ ProseMirror. Facilita la preservación del formato en el futuro (posiciones de origen) | Más código propio (vistas de nodo, *input rules*, atajos) y más horas en un proyecto con poca dedicación |
 
-**Recomendación:** empezar con **Milkdown** y fijar una salida de emergencia. Si el spike muestra que su abstracción impide controlar la serialización, pasar a ProseMirror directo reutilizando los mismos plugins de remark. Criterios del spike: el ida y vuelta del corpus de pruebas es idempotente, se pueden añadir nodos propios (bloque *raw*, front matter) y se puede conservar la línea de origen en cada bloque.
+**Decisión (ADR-0001, 09/10/2026): ProseMirror directo + remark.** El spike descartó Milkdown. Recomendación original: empezar con **Milkdown** y fijar una salida de emergencia. Si el spike muestra que su abstracción impide controlar la serialización, pasar a ProseMirror directo reutilizando los mismos plugins de remark. Criterios del spike: el ida y vuelta del corpus de pruebas es idempotente, se pueden añadir nodos propios (bloque *raw*, front matter) y se puede conservar la línea de origen en cada bloque.
 
 ### 2.2 Resto del stack
 
@@ -217,14 +217,14 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | H0.2 | Spike del editor WYSIWYG (Milkdown frente a ProseMirror directo) con corpus mínimo de ida y vuelta | ADR-0001 | 2 sem | H0.1 |
 | H0.3 | Spike .docx: Pandoc + reference-doc + fusión con una plantilla de ejemplo; validador Open XML SDK en Docker | ADR-0002, validador funcionando | 2 sem | H0.1 |
 
-### Fase 1 — MVP editor (≈ 12 semanas)
+### Fase 1 — MVP editor (≈ 14 semanas)
 
 | Hito | Tareas | Duración | Depende de |
 |---|---|---|---|
 | H1.1 | Shell de la app, abrir/guardar/guardar como, estado «modificado», `ToolchainDetector` con aviso si faltan Pandoc o LaTeX | 1 sem | H0.1 |
 | H1.2 | Vista de código con CodeMirror 6 y resaltado Markdown | 1 sem | H1.1 |
-| H1.3 | WYSIWYG básico: párrafos, títulos, énfasis, enlaces, listas, citas, código, nodos *raw* | 2 sem | H0.2, H1.1 |
-| H1.4 | WYSIWYG GFM: tablas, listas de tareas, tachado | 2 sem | H1.3 |
+| H1.3 | WYSIWYG básico: párrafos, títulos, énfasis, enlaces, listas, citas, código, nodos *raw*; atajos, *input rules* e historial con `prosemirror-*` | 3 sem | H0.2, H1.1 |
+| H1.4 | WYSIWYG GFM: tablas (`prosemirror-tables`), listas de tareas, tachado | 3 sem | H1.3 |
 | H1.5 | Imágenes con rutas relativas y copia a `assets/`, matemáticas con KaTeX, notas al pie, front matter | 2 sem | H1.3 |
 | H1.6 | Sincronización bidireccional con diff mínimo y prueba de idempotencia sobre el corpus | 2 sem | H1.2, H1.4 |
 | H1.7 | Scroll sincronizado, conmutar vistas, e2e con Playwright (abrir → editar en ambas vistas → guardar) | 2 sem | H1.6 |
@@ -253,9 +253,9 @@ Preservación del formato original del .md, i18n, otros sistemas operativos.
 | Fase | Inicio | Fin |
 |---|---|---|
 | Fase 0 | 12/10/2026 | 15/11/2026 |
-| Fase 1 | 16/11/2026 | 07/02/2027 (incluye margen por Navidad) |
-| Fase 2 | 08/02/2027 | 02/05/2027 |
-| **MVP** | | **≈ 02/05/2027** |
+| Fase 1 | 16/11/2026 | 21/02/2027 (incluye margen por Navidad) |
+| Fase 2 | 22/02/2027 | 16/05/2027 |
+| **MVP** | | **≈ 16/05/2027** |
 
 ## 6. Criterios de aceptación del MVP
 
@@ -277,7 +277,7 @@ Preservación del formato original del .md, i18n, otros sistemas operativos.
 | R5 | Fidelidad del .docx: Word muestra algo distinto a lo que muestra LibreOffice | Alta | Alto | Postprocesado basado en estilos, linter, Word Online en cada hito, `compatibilityMode=15` |
 | R6 | Comparación visual poco fiable por fuentes ausentes (Calibri, Cambria, Aptos) | Alta | Medio | Instalar Carlito y Caladea, o usar en las plantillas de ejemplo fuentes disponibles en ambos entornos |
 | R7 | Plantillas con estructuras complejas (varias secciones, campos, controles de contenido anidados) | Media | Medio | Empezar con plantillas de ejemplo controladas; documentar lo que no se soporta |
-| R8 | Milkdown no permite el control necesario | Media | Medio | Spike H0.2 con criterios explícitos y salida a ProseMirror directo |
+| R8 | ~~Milkdown no permite el control necesario~~ Cerrado: ADR-0001 elige ProseMirror directo. Nuevo riesgo: coste de montar la capa de edición | Media | Medio | Usar los paquetes oficiales `prosemirror-*`; H1.3 y H1.4 ampliados |
 | R9 | Versión de Pandoc del sistema (3.1.3) antigua o distinta en otros equipos | Media | Bajo | Declarar una versión mínima y comprobarla en `ToolchainDetector` |
 | R10 | Poca dedicación semanal: se amplía el alcance o se pierde el contexto entre sesiones | Alta | Medio | Hitos pequeños, ADRs y notas de estado en cada hito |
 
