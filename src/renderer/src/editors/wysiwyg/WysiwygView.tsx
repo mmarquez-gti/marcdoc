@@ -5,7 +5,12 @@ import { Slice, type Node as PMNode } from 'prosemirror-model'
 import { EditorState, type Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
-import { BlockSources, createIncrementalSerializer, markdownToDoc } from '../../../../core/markdown'
+import {
+  BlockSources,
+  createIncrementalSerializer,
+  markdownToDoc,
+  normalizePastedSlice,
+} from '../../../../core/markdown'
 import { diffTopLevelBlocks } from '../../../../core/sync/blockDiff'
 import { createPortal } from 'react-dom'
 import { FormatToolbar } from './FormatToolbar'
@@ -160,6 +165,8 @@ export function WysiwygView({
         mousedown: () => flushPending(),
         keydown: () => flushPending(),
       },
+      // Plain-text pastes (Ctrl+Shift+V) are kept exactly as the user copied them.
+      transformPasted: (slice, _view, plain) => (plain ? slice : normalizePastedSlice(slice)),
       handlePaste(pasteView, event) {
         const files = imageFiles(event.clipboardData)
         if (files.length === 0) return false

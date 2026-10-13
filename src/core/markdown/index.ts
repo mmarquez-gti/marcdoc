@@ -8,6 +8,7 @@ export { schema } from './schema'
 export { STRINGIFY_OPTIONS } from './remark'
 export { createIncrementalSerializer } from './incremental'
 export { BlockSources } from './blockSources'
+export { collapsePastedSpaces, normalizePastedSlice } from './pasteWhitespace'
 
 /**
  * Parses Markdown into an editor document. With `sources`, the original text of every

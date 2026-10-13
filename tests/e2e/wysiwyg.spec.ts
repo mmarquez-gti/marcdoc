@@ -139,3 +139,19 @@ test('applies strikethrough from the toolbar', async () => {
   await page.getByRole('button', { name: /Strikethrough/ }).click()
   await expect.poll(() => sourceText(page)).toBe('~~obsolete~~\n')
 })
+
+test('collapses the space runs that LibreOffice puts in pasted HTML', async () => {
+  const { page } = launched
+  await wysiwyg(page).click()
+  // As LibreOffice writes it: a lone &nbsp; is intentional, &nbsp; next to a space is padding.
+  const html = '<p align="justify">Fig.&nbsp;1 &nbsp;fin.&nbsp; Ok</p>'
+  await wysiwyg(page).evaluate((element, html) => {
+    const transfer = new DataTransfer()
+    transfer.setData('text/html', html)
+    element.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: transfer, bubbles: true, cancelable: true }),
+    )
+  }, html)
+
+  await expect.poll(() => sourceText(page)).toBe('Fig.\u00a01 fin. Ok\n')
+})
