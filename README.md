@@ -100,6 +100,32 @@ lang: en-GB
 As shown before [@doe2020, p. 3].
 ```
 
+### Command line
+
+The same binary exports and opens files from a terminal, a script or an AI agent. The `.deb`
+installs it as `marcdoc`; with the AppImage, call the `.AppImage` file; in development, use
+`npx electron . <command>`.
+
+```sh
+marcdoc export report.md --template ~/Templates/university.dotx   # report.docx next to it
+marcdoc export report.md --format pdf-html -o out/report.pdf
+marcdoc export thesis.md -f pdf-latex --latex-template thesis.latex
+marcdoc open report.md                                              # returns at once
+marcdoc templates                                                   # bundled Word templates
+```
+
+- `export` runs without a window. Formats: `docx` (default), `pdf-html`, `pdf-latex`, `latex`.
+  Relative paths are resolved against the current directory, and relative images against the
+  document. A `<template>.marcdoc.json` mapping next to the template is used, as in the app.
+- `--json` prints `{"ok": true, "outputPath": …, "warnings": […]}` or `{"ok": false, "error": …}`.
+- `open` hands the file to the running editor, or starts one, and returns without waiting. If
+  the open document has unsaved changes, the editor asks first.
+- Exit codes: `0` success, `1` the export or open failed, `2` wrong arguments (the usage is
+  printed). `marcdoc help` shows every option.
+
+MarcDoc runs as a single instance: opening a file while it is running brings it to the open
+window.
+
 ### Document view shortcuts
 
 | Shortcut                                            | Action                                                 |
@@ -113,7 +139,7 @@ As shown before [@doe2020, p. 3].
 ## Documentation
 
 - [docs/adr/](docs/adr/) — design decisions: editor, Word export pipeline, citations,
-  cross-references, platform support.
+  cross-references, platform support, command line.
 - [docs/validation/word-online-checklist.md](docs/validation/word-online-checklist.md) — how
   Word output is reviewed.
 - [CHANGELOG.md](CHANGELOG.md) — what changed in each version.

@@ -1,6 +1,25 @@
+import { spawn } from 'node:child_process'
+import { access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, Menu, protocol, shell } from 'electron'
-import { ASSET_PROTOCOL, formatWindowTitle } from '../core'
+import {
+  ASSET_PROTOCOL,
+  CliUsageError,
+  formatWindowTitle,
+  parseCommandLine,
+  userArguments,
+  type CliCommand,
+} from '../core'
+import { IpcChannel } from '../shared/ipc'
+import {
+  editorPath,
+  EXIT_FAILURE,
+  EXIT_SUCCESS,
+  runExport,
+  runListTemplates,
+  showUsage,
+  type CliOutput,
+} from './cli'
 import { LocaleController } from './locale'
 import { registerIpcHandlers, type WindowState } from './ipc'
 import { buildApplicationMenu } from './menu'
@@ -11,6 +30,7 @@ import { AssetService } from './services/assetService'
 import { FileService } from './services/fileService'
 import { ImportService } from './services/importService'
 import { LatexTemplateService } from './services/latexTemplateService'
+import { OpenRequests } from './services/openRequests'
 import { SettingsService } from './services/settingsService'
 import { TemplateService } from './services/templateService'
 
@@ -27,7 +47,19 @@ protocol.registerSchemesAsPrivileged([
   { scheme: ASSET_PROTOCOL, privileges: { standard: true, secure: true } },
 ])
 
-function createMainWindow(i18n: LocaleController): BrowserWindow {
+interface MainWindow {
+  readonly window: BrowserWindow
+  readonly openRequests: OpenRequests
+}
+
+/** Sent by a second instance to the running one through the single instance lock. */
+interface SecondInstanceData {
+  readonly openPath: string | null
+}
+
+const BUNDLED_TEMPLATES_DIR = 'templates/docx'
+
+function createMainWindow(i18n: LocaleController): MainWindow {
   const window = new BrowserWindow({
     width: DEFAULT_WINDOW_WIDTH,
     height: DEFAULT_WINDOW_HEIGHT,
@@ -47,11 +79,14 @@ function createMainWindow(i18n: LocaleController): BrowserWindow {
   const assets = new AssetService(() => files.currentPath)
   protocol.handle(ASSET_PROTOCOL, (request) => assets.serve(request.url))
   const exporter = new ExportService(resourcesDir())
-  const templates = new TemplateService(join(resourcesDir(), 'templates/docx'))
+  const templates = new TemplateService(join(resourcesDir(), BUNDLED_TEMPLATES_DIR))
   const latexTemplates = new LatexTemplateService(join(resourcesDir(), 'templates/latex'))
+  const openRequests = new OpenRequests((path) =>
+    window.webContents.send(IpcChannel.OpenRequested, path),
+  )
   const disposeIpc = registerIpcHandlers(
     window,
-    { files, importer, assets, exporter, templates, latexTemplates },
+    { files, importer, assets, exporter, templates, latexTemplates, openRequests },
     state,
     i18n,
   )
@@ -111,25 +146,137 @@ function createMainWindow(i18n: LocaleController): BrowserWindow {
     void window.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  return window
+  return { window, openRequests }
 }
 
-void app.whenReady().then(async () => {
-  const settings = new SettingsService(join(app.getPath('userData'), 'settings.json'))
-  // MARCDOC_LOCALE forces a language (used by the end-to-end tests).
-  const i18n = await LocaleController.create(
-    settings,
-    app.getLocale(),
-    process.env['MARCDOC_LOCALE'],
-  )
-  createMainWindow(i18n)
-  // macOS convention: clicking the Dock icon with no window open creates one.
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow(i18n)
-  })
-})
+/** The editor. A single instance runs: later launches hand their file to it and exit. */
+function startEditor(openPath: string | null): void {
+  const data: SecondInstanceData = {
+    openPath: openPath === null ? null : editorPath(openPath, process.cwd()),
+  }
+  if (!app.requestSingleInstanceLock(data)) {
+    app.quit()
+    return
+  }
 
-// macOS convention: closing the last window keeps the app running.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+  let i18n: LocaleController | null = null
+  let main: MainWindow | null = null
+  const showEditor = (path: string | null) => {
+    if (!i18n) return
+    if (!main || main.window.isDestroyed()) {
+      main = createMainWindow(i18n)
+    } else {
+      if (main.window.isMinimized()) main.window.restore()
+      main.window.focus()
+    }
+    if (path !== null) main.openRequests.request(path)
+  }
+
+  app.on('second-instance', (_event, _argv, _cwd, additionalData) => {
+    // Ignored if malformed: any program can start a second instance.
+    const path = (additionalData as Partial<SecondInstanceData> | null)?.openPath
+    void app.whenReady().then(() => showEditor(typeof path === 'string' ? path : null))
+  })
+
+  void app.whenReady().then(async () => {
+    const settings = new SettingsService(join(app.getPath('userData'), 'settings.json'))
+    // MARCDOC_LOCALE forces a language (used by the end-to-end tests).
+    i18n = await LocaleController.create(settings, app.getLocale(), process.env['MARCDOC_LOCALE'])
+    showEditor(data.openPath)
+    // macOS convention: clicking the Dock icon with no window open creates one.
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) showEditor(null)
+    })
+  })
+
+  // macOS convention: closing the last window keeps the app running.
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
+  })
+}
+
+/**
+ * `marcdoc open`: hands the file to the running editor, or starts a detached one, and exits at
+ * once, so scripts and agents are not blocked while the editor is open.
+ */
+async function openInEditor(path: string, output: CliOutput): Promise<number> {
+  const absolutePath = editorPath(path, process.cwd())
+  try {
+    await access(absolutePath)
+  } catch {
+    output.err(`marcdoc: cannot open ${absolutePath}: file not found`)
+    return EXIT_FAILURE
+  }
+  const data: SecondInstanceData = { openPath: absolutePath }
+  // Without the lock, the running editor received the file in its second-instance event.
+  if (!app.requestSingleInstanceLock(data)) return EXIT_SUCCESS
+  app.releaseSingleInstanceLock()
+  // An AppImage is mounted only while it runs: start the AppImage itself, not the binary inside.
+  const executable = process.env['APPIMAGE'] ?? process.execPath
+  const args = app.isPackaged ? [absolutePath] : [app.getAppPath(), absolutePath]
+  spawn(executable, args, { detached: true, stdio: 'ignore' }).unref()
+  return EXIT_SUCCESS
+}
+
+/** Runs a command without the editor and exits with its status. */
+function runCommand(command: () => Promise<number>, needsElectron: boolean): void {
+  // Without a listener, Electron quits when the hidden window of a PDF export closes.
+  app.on('window-all-closed', () => {})
+  // Nothing is shown, and the GPU process only adds start-up time and driver warnings.
+  app.disableHardwareAcceleration()
+  void (needsElectron ? app.whenReady() : Promise.resolve())
+    .then(command)
+    .catch((error: unknown) => {
+      stdio.err(`marcdoc: ${error instanceof Error ? error.message : String(error)}`)
+      return EXIT_FAILURE
+    })
+    .then((code) => app.exit(code))
+}
+
+const stdio: CliOutput = {
+  out: (text) => process.stdout.write(`${text}\n`),
+  err: (text) => process.stderr.write(`${text}\n`),
+}
+
+function parseArguments(): CliCommand | CliUsageError {
+  try {
+    return parseCommandLine(userArguments(process.argv, app.isPackaged))
+  } catch (error) {
+    if (error instanceof CliUsageError) return error
+    throw error
+  }
+}
+
+const command = parseArguments()
+if (command instanceof CliUsageError) {
+  runCommand(async () => showUsage(stdio, command.message), false)
+} else {
+  switch (command.kind) {
+    case 'gui':
+      startEditor(command.openPath)
+      break
+    case 'open':
+      runCommand(() => openInEditor(command.path, stdio), false)
+      break
+    case 'export':
+      runCommand(
+        () => runExport(command, process.cwd(), new ExportService(resourcesDir()), stdio),
+        true,
+      )
+      break
+    case 'templates':
+      runCommand(
+        () =>
+          runListTemplates(
+            new TemplateService(join(resourcesDir(), BUNDLED_TEMPLATES_DIR)),
+            command.json,
+            stdio,
+          ),
+        true,
+      )
+      break
+    case 'help':
+      runCommand(async () => showUsage(stdio), false)
+      break
+  }
+}

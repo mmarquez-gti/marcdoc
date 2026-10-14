@@ -16,6 +16,8 @@ export async function launchApp(
     readonly env?: Record<string, string>
     /** Packaged executable to test instead of the development build. */
     readonly executablePath?: string
+    /** Command-line arguments for the app, e.g. a file to open. */
+    readonly args?: readonly string[]
   } = {},
 ): Promise<LaunchedApp> {
   // English interface and a throwaway settings folder unless a test asks otherwise.
@@ -25,9 +27,10 @@ export async function launchApp(
     MARCDOC_USER_DATA: mkdtempSync(join(tmpdir(), 'marcdoc-user-data-')),
     ...options.env,
   }
+  const args = options.args ?? []
   const app = options.executablePath
-    ? await electron.launch({ executablePath: options.executablePath, args: [], env })
-    : await electron.launch({ args: [ROOT], cwd: ROOT, env })
+    ? await electron.launch({ executablePath: options.executablePath, args: [...args], env })
+    : await electron.launch({ args: [ROOT, ...args], cwd: ROOT, env })
   const page = await app.firstWindow()
   await page.waitForSelector('.app')
   // The Word template's look loads asynchronously; tests start once the page has its final

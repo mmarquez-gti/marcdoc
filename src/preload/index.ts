@@ -11,6 +11,13 @@ const api: MarcDocApi = {
     return () => ipcRenderer.removeListener(IpcChannel.LocaleChanged, handler)
   },
   openDocument: () => ipcRenderer.invoke(IpcChannel.OpenDocument),
+  onOpenRequest: (listener) => {
+    const handler = (_event: IpcRendererEvent, path: string) => listener(path)
+    ipcRenderer.on(IpcChannel.OpenRequested, handler)
+    ipcRenderer.send(IpcChannel.OpenRequestsReady)
+    return () => ipcRenderer.removeListener(IpcChannel.OpenRequested, handler)
+  },
+  openRequestedDocument: (path) => ipcRenderer.invoke(IpcChannel.OpenRequestedDocument, path),
   importDocx: () => ipcRenderer.invoke(IpcChannel.ImportDocx),
   saveDocument: (path, content) => ipcRenderer.invoke(IpcChannel.SaveDocument, path, content),
   saveDocumentAs: (content, currentPath) =>

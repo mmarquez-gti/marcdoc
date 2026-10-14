@@ -7,6 +7,7 @@ import type { AssetService } from './services/assetService'
 import type { FileService } from './services/fileService'
 import type { ImportService } from './services/importService'
 import type { LatexTemplateService } from './services/latexTemplateService'
+import type { OpenRequests } from './services/openRequests'
 import type { TemplateService } from './services/templateService'
 import { detectToolchain } from './services/toolchainDetector'
 import type { LocaleController } from './locale'
@@ -25,11 +26,12 @@ export interface Services {
   readonly exporter: ExportService
   readonly templates: TemplateService
   readonly latexTemplates: LatexTemplateService
+  readonly openRequests: OpenRequests
 }
 
 export function registerIpcHandlers(
   window: BrowserWindow,
-  { files, importer, assets, exporter, templates, latexTemplates }: Services,
+  { files, importer, assets, exporter, templates, latexTemplates, openRequests }: Services,
   state: WindowState,
   i18n: LocaleController,
 ): () => void {
@@ -77,6 +79,13 @@ export function registerIpcHandlers(
     })
     const path = result.filePaths[0]
     return result.canceled || !path ? null : files.open(path)
+  })
+
+  on(IpcChannel.OpenRequestsReady, () => openRequests.markReady())
+
+  handle(IpcChannel.OpenRequestedDocument, (_event, path: string) => {
+    openRequests.assertRequested(path)
+    return files.open(path)
   })
 
   handle(IpcChannel.ImportDocx, async () => {

@@ -89,6 +89,22 @@ export function useDocument(): DocumentController {
     [run, t],
   )
 
+  // Files opened from the command line or the file manager.
+  useEffect(
+    () =>
+      window.marcdoc.onOpenRequest(
+        (path) =>
+          void run(async () => {
+            if (isDirty(stateRef.current) && !window.confirm(t('document.discardAndOpen'))) {
+              return
+            }
+            const opened = await window.marcdoc.openRequestedDocument(path)
+            dispatch({ type: 'opened', path: opened.path, content: opened.content })
+          }),
+      ),
+    [run, t],
+  )
+
   const importDocx = useCallback(
     () =>
       run(async () => {

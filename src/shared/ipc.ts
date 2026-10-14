@@ -3,6 +3,9 @@
 
 export const IpcChannel = {
   OpenDocument: 'document:open',
+  OpenRequested: 'document:open-requested',
+  OpenRequestsReady: 'document:open-requests-ready',
+  OpenRequestedDocument: 'document:open-requested-document',
   ImportDocx: 'document:import-docx',
   SaveDocument: 'document:save',
   SaveDocumentAs: 'document:save-as',
@@ -105,6 +108,13 @@ export interface ToolStatus {
 export interface MarcDocApi {
   /** Shows the open dialog; resolves to null if the user cancels. */
   openDocument(): Promise<OpenedDocument | null>
+  /**
+   * Subscribes to files asked to open from outside the window (command line, file manager);
+   * returns an unsubscribe function. Subscribing tells the main process the window is ready.
+   */
+  onOpenRequest(listener: (path: string) => void): () => void
+  /** Opens a path received by `onOpenRequest`; other paths are refused. */
+  openRequestedDocument(path: string): Promise<OpenedDocument>
   /**
    * Asks for a Word document and where to save it as Markdown, converts it and opens the
    * result; resolves to null if the user cancels either dialog.
