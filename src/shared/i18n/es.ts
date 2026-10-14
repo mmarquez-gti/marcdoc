@@ -152,6 +152,7 @@ export const es: Messages = {
 
   'menu.file': 'Archivo',
   'menu.open': 'Abrir…',
+  'menu.importDocx': 'Importar documento de Word…',
   'menu.save': 'Guardar',
   'menu.saveAs': 'Guardar como…',
   'menu.export': 'Exportar…',
@@ -161,10 +162,12 @@ export const es: Messages = {
   'menu.viewSplit': 'Documento y código',
   'menu.viewWysiwyg': 'Solo documento',
   'menu.viewSource': 'Solo código',
+  'menu.templateLook': 'Aspecto de la plantilla de Word',
   'menu.language': 'Idioma',
 
   'dialog.markdownFiles': 'Markdown',
   'dialog.allFiles': 'Todos los archivos',
+  'dialog.wordDocuments': 'Documentos de Word',
   'dialog.wordTemplates': 'Plantillas de Word',
   'dialog.latexTemplates': 'Plantillas LaTeX de Pandoc',
   'dialog.unsavedMessage': 'Este documento tiene cambios sin guardar.',

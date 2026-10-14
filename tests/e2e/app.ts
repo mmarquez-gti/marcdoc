@@ -30,6 +30,9 @@ export async function launchApp(
     : await electron.launch({ args: [ROOT], cwd: ROOT, env })
   const page = await app.firstWindow()
   await page.waitForSelector('.app')
+  // The Word template's look loads asynchronously; tests start once the page has its final
+  // layout, so it does not change under their keystrokes.
+  await page.waitForSelector('.wysiwyg-view.template-look')
   return { app, page }
 }
 

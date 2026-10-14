@@ -72,6 +72,9 @@ export interface BlockPosition {
   readonly fraction: number
 }
 
+/** Page element while the view has a Word template's look (see useTemplateLook). */
+export const TEMPLATE_LOOK_SCOPE = '.wysiwyg-view.template-look .wysiwyg-content'
+
 export interface WysiwygViewHandle {
   readonly scroller: HTMLElement | null
   topBlock(): BlockPosition | null
@@ -88,6 +91,8 @@ interface WysiwygViewProps {
   readonly onError: (message: string) => void
   /** Where the formatting toolbar is shown: a full-width strip under the top bar. */
   readonly toolbarSlot: HTMLElement | null
+  /** CSS with a Word template's formatting, scoped to TEMPLATE_LOOK_SCOPE; null for none. */
+  readonly templateCss?: string | null
 }
 
 function createState(markdown: string, sources: BlockSources): EditorState {
@@ -111,6 +116,7 @@ export function WysiwygView({
   onChange,
   onError,
   toolbarSlot,
+  templateCss = null,
   ref,
 }: WysiwygViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -270,7 +276,8 @@ export function WysiwygView({
   )
 
   return (
-    <div className="wysiwyg-view">
+    <div className={templateCss ? 'wysiwyg-view template-look' : 'wysiwyg-view'}>
+      {templateCss && <style>{templateCss}</style>}
       {editorState &&
         toolbarView &&
         toolbarSlot &&

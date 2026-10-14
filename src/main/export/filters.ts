@@ -9,3 +9,8 @@ export function exportLuaFilters(resourcesDir: string): string[] {
     join(resourcesDir, 'pandoc/filters', filter),
   )
 }
+
+/** Lua filters a Word import runs: import-docx.lua keeps images as plain Markdown images. */
+export function importLuaFilters(resourcesDir: string): string[] {
+  return [join(resourcesDir, 'pandoc/filters', 'import-docx.lua')]
+}

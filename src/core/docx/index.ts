@@ -1,6 +1,18 @@
 export { adaptToTemplate, type AdaptInput, type AdaptReport } from './adapter'
 export { lintDocx, type LintIssue } from './lint'
 export {
+  readTemplateLook,
+  templateLook,
+  themeInfo,
+  type LineSpacing,
+  type PageLook,
+  type TemplateLook,
+  type TextAlign,
+  type TextLook,
+  type ThemeInfo,
+} from './look'
+export { fontStack, templateLookCss } from './lookCss'
+export {
   checkMappingAgainst,
   findMappingProblems,
   type MappingProblem,

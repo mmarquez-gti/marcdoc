@@ -4,6 +4,25 @@ All notable changes to MarcDoc are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-13
+
+### Added
+
+- File → Import Word document… converts a .docx into a Markdown file and opens it. Images are
+  extracted next to it, in `assets/<document name>/`.
+- The document view shows the formatting of the Word template chosen for export (MarcDoc's
+  default template when none is chosen): fonts, sizes, colours, alignment, spacing and page
+  margins of the mapped styles. View → Word template look turns it off. The page stays white
+  in dark mode. Table styles, heading numbering, headers and footers are not shown yet.
+
+### Changed
+
+- Pasting HTML into the document view collapses the runs of normal and no-break spaces that
+  LibreOffice pads clipboard text with. Lone no-break spaces, code, math and plain-text pastes
+  are kept.
+- Word export: when any heading is numbered by hand, the template's automatic heading numbering
+  is switched off for every heading, so numbers are neither doubled nor mixed.
+
 ## [0.1.1] - 2026-10-09
 
 ### Fixed
@@ -48,5 +67,6 @@ First public release. Linux only (AppImage and .deb).
 - Word output has been validated with the Open XML SDK and LibreOffice; the manual review in
   Microsoft Word is still pending (see `docs/validation/word-online-checklist.md`).
 
+[0.1.2]: https://github.com/mmarquez-gti/marcdoc/releases/tag/v0.1.2
 [0.1.1]: https://github.com/mmarquez-gti/marcdoc/releases/tag/v0.1.1
 [0.1.0]: https://github.com/mmarquez-gti/marcdoc/releases/tag/v0.1.0

@@ -1,10 +1,11 @@
 import { dirname, join } from 'node:path'
 import { dialog, ipcMain, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
-import { defaultOutputName, EXPORT_FORMATS } from '../core'
+import { defaultOutputName, EXPORT_FORMATS, importedMarkdownName } from '../core'
 import { IpcChannel, type ExportRequest } from '../shared/ipc'
 import type { ExportService } from './export/exportService'
 import type { AssetService } from './services/assetService'
 import type { FileService } from './services/fileService'
+import type { ImportService } from './services/importService'
 import type { LatexTemplateService } from './services/latexTemplateService'
 import type { TemplateService } from './services/templateService'
 import { detectToolchain } from './services/toolchainDetector'
@@ -19,6 +20,7 @@ export interface WindowState {
 
 export interface Services {
   readonly files: FileService
+  readonly importer: ImportService
   readonly assets: AssetService
   readonly exporter: ExportService
   readonly templates: TemplateService
@@ -27,7 +29,7 @@ export interface Services {
 
 export function registerIpcHandlers(
   window: BrowserWindow,
-  { files, assets, exporter, templates, latexTemplates }: Services,
+  { files, importer, assets, exporter, templates, latexTemplates }: Services,
   state: WindowState,
   i18n: LocaleController,
 ): () => void {
@@ -75,6 +77,21 @@ export function registerIpcHandlers(
     })
     const path = result.filePaths[0]
     return result.canceled || !path ? null : files.open(path)
+  })
+
+  handle(IpcChannel.ImportDocx, async () => {
+    const source = await dialog.showOpenDialog(window, {
+      properties: ['openFile'],
+      filters: [{ name: i18n.t('dialog.wordDocuments'), extensions: ['docx'] }],
+    })
+    const docxPath = source.filePaths[0]
+    if (source.canceled || !docxPath) return null
+    const target = await dialog.showSaveDialog(window, {
+      defaultPath: join(dirname(docxPath), importedMarkdownName(docxPath)),
+      filters: markdownFilters(),
+    })
+    if (target.canceled || !target.filePath) return null
+    return importer.importDocx(docxPath, target.filePath)
   })
 
   handle(IpcChannel.SaveDocument, (_event, path: string, content: string) =>
@@ -136,6 +153,11 @@ export function registerIpcHandlers(
   })
 
   handle(IpcChannel.InspectTemplate, (_event, path: string) => templates.inspect(path))
+
+  handle(IpcChannel.GetTemplateLook, (_event, path: unknown) => {
+    if (path !== null && typeof path !== 'string') throw new Error('Invalid template path.')
+    return templates.look(path)
+  })
 
   handle(IpcChannel.SaveMapping, (_event, path: string, mapping: unknown) =>
     templates.saveMapping(path, mapping),

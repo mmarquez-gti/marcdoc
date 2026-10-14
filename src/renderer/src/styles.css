@@ -1,7 +1,10 @@
 /* MarcDoc interface. One accent colour (the navy of the Word templates), neutral greys,
    1px borders and small radii: the look of a document editor, not of a landing page. */
 
-:root {
+/* The page keeps the light palette with a Word template's look: it shows the template's real
+   colours, as paper, also in dark mode (the dark palette below only redefines :root). */
+:root,
+.wysiwyg-view.template-look .wysiwyg-content {
   color-scheme: light;
   --font-ui: system-ui, -apple-system, 'Segoe UI', Ubuntu, Cantarell, sans-serif;
   --font-mono: ui-monospace, 'DejaVu Sans Mono', 'Cascadia Mono', Menlo, monospace;
@@ -632,6 +635,23 @@ input:focus-visible {
   outline: none;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* The template's own rules come from templateLookCss; these undo the editor's decorations that
+   Word does not have. */
+.wysiwyg-view.template-look .wysiwyg-content {
+  background: var(--bg);
+}
+
+.wysiwyg-view.template-look .wysiwyg-content blockquote {
+  padding-left: 0;
+  border-left: none;
+  color: inherit;
+}
+
+.wysiwyg-view.template-look .wysiwyg-content pre > code {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .wysiwyg-content h1,

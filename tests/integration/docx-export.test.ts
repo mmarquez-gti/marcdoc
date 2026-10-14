@@ -310,6 +310,99 @@ describe('templates made from a blank Word document', () => {
   })
 })
 
+describe('templates that number headings', () => {
+  const WML = 'application/vnd.openxmlformats-officedocument.wordprocessingml'
+  const NUMBERING = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="multilevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:pStyle w:val="Ttulo1"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/></w:lvl><w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:pStyle w:val="Ttulo2"/><w:lvlText w:val="%1.%2"/><w:lvlJc w:val="left"/></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>`
+
+  /** The Spanish sample template with headings 1 and 2 numbered through their styles. */
+  async function numberedHeadingsTemplate(): Promise<string> {
+    const zip = await JSZip.loadAsync(
+      readFileSync(join(RESOURCES, 'templates/docx/sample-es.dotx')),
+    )
+    let styles = await zip.file('word/styles.xml')!.async('string')
+    for (const level of [1, 2]) {
+      styles = styles.replace(
+        new RegExp(`(w:styleId="Ttulo${level}">(?:(?!</w:style>).)*?<w:keepLines/>)`, 's'),
+        `$1<w:numPr><w:ilvl w:val="${level - 1}"/><w:numId w:val="1"/></w:numPr>`,
+      )
+    }
+    zip.file('word/styles.xml', styles)
+    zip.file('word/numbering.xml', NUMBERING)
+    const rels = await zip.file('word/_rels/document.xml.rels')!.async('string')
+    zip.file(
+      'word/_rels/document.xml.rels',
+      rels.replace(
+        '</Relationships>',
+        '<Relationship Id="rIdNumbering" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/></Relationships>',
+      ),
+    )
+    const types = await zip.file('[Content_Types].xml')!.async('string')
+    zip.file(
+      '[Content_Types].xml',
+      types.replace(
+        '</Types>',
+        `<Override PartName="/word/numbering.xml" ContentType="${WML}.numbering+xml"/></Types>`,
+      ),
+    )
+    const path = join(workDir, 'numbered-headings.dotx')
+    writeFileSync(path, await zip.generateAsync({ type: 'uint8array' }))
+    return path
+  }
+
+  async function exportNumbered(name: string, markdown: string): Promise<string> {
+    const outputPath = join(workDir, `${name}.docx`)
+    const exportDir = mkdtempSync(join(tmpdir(), 'marcdoc-docx-job-'))
+    try {
+      await exportDocx({
+        markdown,
+        invocation: {
+          resourcePath: workDir,
+          outputPath,
+          fallbackTitle: 'x',
+          luaFilters: exportLuaFilters(RESOURCES),
+        },
+        templatePath: await numberedHeadingsTemplate(),
+        resourcesDir: RESOURCES,
+        workDir: exportDir,
+      })
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true })
+    }
+    outputs.push(outputPath)
+    const bytes = readFileSync(outputPath)
+    const errors = (await lintDocx(bytes)).filter((issue) => issue.severity === 'error')
+    expect(errors).toEqual([])
+    return (await JSZip.loadAsync(bytes)).file('word/document.xml')!.async('string')
+  }
+
+  /** Heading paragraphs of the exported body, in order. */
+  function headings(xml: string): string[] {
+    return Array.from(
+      xml.matchAll(/<w:p>(?:(?!<\/w:p>).)*?w:val="Ttulo\d"(?:(?!<\/w:p>).)*<\/w:p>/gs),
+      (m) => m[0],
+    )
+  }
+
+  it('keeps headings the author numbered and adds no automatic numbers', async () => {
+    const xml = await exportNumbered(
+      'manual-heading-numbers',
+      '# 1. Introducción\n\n## 1.1 Contexto\n\nTexto.\n\n# Anexo\n',
+    )
+    const found = headings(xml)
+    expect(found).toHaveLength(3)
+    expect(found[0]).toContain('1. Introducción')
+    for (const heading of found) expect(heading).toContain('<w:numId w:val="0"/>')
+  })
+
+  it('numbers headings automatically when the author did not', async () => {
+    const xml = await exportNumbered('automatic-heading-numbers', '# Introducción\n\n## Contexto\n')
+    const found = headings(xml)
+    expect(found).toHaveLength(2)
+    for (const heading of found) expect(heading).not.toContain('<w:numId')
+  })
+})
+
 describe('Open XML SDK validation (layer a)', () => {
   it('finds no schema errors in any exported document', ({ skip }) => {
     if (!dockerAvailable()) skip('Docker is not available to run the Open XML SDK validator')

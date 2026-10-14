@@ -5,9 +5,11 @@ import { LocaleController } from './locale'
 import { registerIpcHandlers, type WindowState } from './ipc'
 import { buildApplicationMenu } from './menu'
 import { ExportService } from './export/exportService'
+import { importLuaFilters } from './export/filters'
 import { resourcesDir } from './export/resources'
 import { AssetService } from './services/assetService'
 import { FileService } from './services/fileService'
+import { ImportService } from './services/importService'
 import { LatexTemplateService } from './services/latexTemplateService'
 import { SettingsService } from './services/settingsService'
 import { TemplateService } from './services/templateService'
@@ -41,6 +43,7 @@ function createMainWindow(i18n: LocaleController): BrowserWindow {
 
   const state: WindowState = { isDirty: false }
   const files = new FileService()
+  const importer = new ImportService(files, importLuaFilters(resourcesDir()))
   const assets = new AssetService(() => files.currentPath)
   protocol.handle(ASSET_PROTOCOL, (request) => assets.serve(request.url))
   const exporter = new ExportService(resourcesDir())
@@ -48,13 +51,24 @@ function createMainWindow(i18n: LocaleController): BrowserWindow {
   const latexTemplates = new LatexTemplateService(join(resourcesDir(), 'templates/latex'))
   const disposeIpc = registerIpcHandlers(
     window,
-    { files, assets, exporter, templates, latexTemplates },
+    { files, importer, assets, exporter, templates, latexTemplates },
     state,
     i18n,
   )
+  // The document view starts with the template's look; the menu remembers the user's choice.
+  let templateLook = true
   const updateMenu = () =>
     Menu.setApplicationMenu(
-      buildApplicationMenu(window, i18n.t, i18n.locale, (locale) => void i18n.set(locale)),
+      buildApplicationMenu(
+        window,
+        i18n.t,
+        i18n.locale,
+        (locale) => void i18n.set(locale),
+        templateLook,
+        (enabled) => {
+          templateLook = enabled
+        },
+      ),
     )
   const stopMenuUpdates = i18n.onChange(updateMenu)
   updateMenu()

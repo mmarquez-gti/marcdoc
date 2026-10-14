@@ -1,6 +1,7 @@
 // Word template adapter (ADR-0002): merges Pandoc's .docx output into a template package,
 // remaps styles by ID and normalizes the result so it conforms to the OOXML schema.
 import { placeBody, fillCover } from './body'
+import { headingStyleIds, keepManualHeadingNumbers } from './headings'
 import type { StyleMapping } from './mapping'
 import {
   fixAttributeValues,
@@ -46,6 +47,8 @@ export interface AdaptReport {
   readonly reorderedElements: number
   /** Attribute values rewritten into the forms Word writes. */
   readonly fixedValues: number
+  /** Headings were numbered by hand, so the template's heading numbering was switched off. */
+  readonly manualHeadingNumbers: boolean
 }
 
 export async function adaptToTemplate(
@@ -76,6 +79,7 @@ export async function adaptToTemplate(
     remapNumIds(block, numIdMap)
     if (footnotes) remapFootnoteReferences(block, footnotes.idMap)
   }
+  const manualHeadingNumbers = keepManualHeadingNumbers(blocks, headingStyleIds(input.mapping))
 
   const placeholderFound = placeBody(document, input.mapping.bodyPlaceholder, blocks)
   const filledCoverTags = fillCover(document, input.mapping.cover, input.metadata)
@@ -112,6 +116,7 @@ export async function adaptToTemplate(
       filledCoverTags,
       reorderedElements,
       fixedValues,
+      manualHeadingNumbers,
     },
   }
 }

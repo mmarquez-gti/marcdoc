@@ -3,6 +3,7 @@
 
 export const IpcChannel = {
   OpenDocument: 'document:open',
+  ImportDocx: 'document:import-docx',
   SaveDocument: 'document:save',
   SaveDocumentAs: 'document:save-as',
   SetDirty: 'document:set-dirty',
@@ -12,6 +13,7 @@ export const IpcChannel = {
   ListTemplates: 'template:list',
   ChooseTemplate: 'template:choose',
   InspectTemplate: 'template:inspect',
+  GetTemplateLook: 'template:look',
   ListLatexTemplates: 'latex-template:list',
   ChooseLatexTemplate: 'latex-template:choose',
   SaveMapping: 'template:save-mapping',
@@ -20,14 +22,22 @@ export const IpcChannel = {
   LocaleChanged: 'locale:changed',
 } as const
 
-import type { StyleInfo, StyleMapping } from '../core/docx'
+import type { StyleInfo, StyleMapping, TemplateLook } from '../core/docx'
 import type { ExportFormat } from '../core/export/formats'
 import type { Locale } from './i18n'
 
 export type ViewMode = 'split' | 'wysiwyg' | 'source'
 
 export type MenuCommand =
-  'open' | 'save' | 'save-as' | 'export' | `view-${ViewMode}` | `export-${ExportFormat}`
+  | 'open'
+  | 'import-docx'
+  | 'template-look-on'
+  | 'template-look-off'
+  | 'save'
+  | 'save-as'
+  | 'export'
+  | `view-${ViewMode}`
+  | `export-${ExportFormat}`
 
 export interface ExportRequest {
   readonly format: ExportFormat
@@ -95,6 +105,11 @@ export interface ToolStatus {
 export interface MarcDocApi {
   /** Shows the open dialog; resolves to null if the user cancels. */
   openDocument(): Promise<OpenedDocument | null>
+  /**
+   * Asks for a Word document and where to save it as Markdown, converts it and opens the
+   * result; resolves to null if the user cancels either dialog.
+   */
+  importDocx(): Promise<OpenedDocument | null>
   /** Saves to a path previously returned by `openDocument` or `saveDocumentAs`. */
   saveDocument(path: string, content: string): Promise<void>
   /** Shows the save dialog; resolves to the chosen path, or null if the user cancels. */
@@ -112,6 +127,8 @@ export interface MarcDocApi {
   /** Shows the open dialog for a Word template; resolves to null if the user cancels. */
   chooseTemplate(): Promise<TemplateInfo | null>
   inspectTemplate(path: string): Promise<TemplateDetails>
+  /** How a Word template formats the document; null is MarcDoc's default template. */
+  getTemplateLook(path: string | null): Promise<TemplateLook>
   listLatexTemplates(): Promise<LatexTemplateInfo[]>
   /** Shows the open dialog for a Pandoc LaTeX template; resolves to null if the user cancels. */
   chooseLatexTemplate(): Promise<LatexTemplateInfo | null>

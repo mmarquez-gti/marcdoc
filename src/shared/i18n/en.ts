@@ -149,6 +149,7 @@ export const en = {
 
   'menu.file': 'File',
   'menu.open': 'Open…',
+  'menu.importDocx': 'Import Word document…',
   'menu.save': 'Save',
   'menu.saveAs': 'Save As…',
   'menu.export': 'Export…',
@@ -158,10 +159,12 @@ export const en = {
   'menu.viewSplit': 'Document and Source',
   'menu.viewWysiwyg': 'Document Only',
   'menu.viewSource': 'Source Only',
+  'menu.templateLook': 'Word template look',
   'menu.language': 'Language',
 
   'dialog.markdownFiles': 'Markdown',
   'dialog.allFiles': 'All files',
+  'dialog.wordDocuments': 'Word documents',
   'dialog.wordTemplates': 'Word templates',
   'dialog.latexTemplates': 'Pandoc LaTeX templates',
   'dialog.unsavedMessage': 'This document has unsaved changes.',

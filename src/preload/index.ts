@@ -11,6 +11,7 @@ const api: MarcDocApi = {
     return () => ipcRenderer.removeListener(IpcChannel.LocaleChanged, handler)
   },
   openDocument: () => ipcRenderer.invoke(IpcChannel.OpenDocument),
+  importDocx: () => ipcRenderer.invoke(IpcChannel.ImportDocx),
   saveDocument: (path, content) => ipcRenderer.invoke(IpcChannel.SaveDocument, path, content),
   saveDocumentAs: (content, currentPath) =>
     ipcRenderer.invoke(IpcChannel.SaveDocumentAs, content, currentPath),
@@ -21,6 +22,7 @@ const api: MarcDocApi = {
   listLatexTemplates: () => ipcRenderer.invoke(IpcChannel.ListLatexTemplates),
   chooseLatexTemplate: () => ipcRenderer.invoke(IpcChannel.ChooseLatexTemplate),
   inspectTemplate: (path) => ipcRenderer.invoke(IpcChannel.InspectTemplate, path),
+  getTemplateLook: (path) => ipcRenderer.invoke(IpcChannel.GetTemplateLook, path),
   saveMapping: (path, mapping) => ipcRenderer.invoke(IpcChannel.SaveMapping, path, mapping),
   exportDocument: (request) => ipcRenderer.invoke(IpcChannel.ExportDocument, request),
   importAsset: (fileName, bytes) => ipcRenderer.invoke(IpcChannel.ImportAsset, fileName, bytes),

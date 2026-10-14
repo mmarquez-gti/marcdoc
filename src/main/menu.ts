@@ -8,6 +8,9 @@ export function buildApplicationMenu(
   t: Translate,
   locale: Locale,
   onLocaleChange: (locale: Locale) => void,
+  /** Whether the document view shows the Word template's formatting. */
+  templateLook: boolean,
+  onTemplateLookChange: (enabled: boolean) => void,
 ): Menu {
   const send = (command: MenuCommand) => () =>
     window.webContents.send(IpcChannel.MenuCommand, command)
@@ -20,6 +23,7 @@ export function buildApplicationMenu(
       label: t('menu.file'),
       submenu: [
         { id: 'open', label: t('menu.open'), accelerator: 'CmdOrCtrl+O', click: send('open') },
+        { id: 'import-docx', label: t('menu.importDocx'), click: send('import-docx') },
         { type: 'separator' },
         { id: 'save', label: t('menu.save'), accelerator: 'CmdOrCtrl+S', click: send('save') },
         {
@@ -67,6 +71,17 @@ export function buildApplicationMenu(
           label: t('menu.viewSource'),
           accelerator: 'CmdOrCtrl+3',
           click: send('view-source'),
+        },
+        { type: 'separator' },
+        {
+          id: 'template-look',
+          label: t('menu.templateLook'),
+          type: 'checkbox',
+          checked: templateLook,
+          click: (item) => {
+            onTemplateLookChange(item.checked)
+            send(item.checked ? 'template-look-on' : 'template-look-off')()
+          },
         },
         { type: 'separator' },
         {

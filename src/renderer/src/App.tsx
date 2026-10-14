@@ -11,6 +11,7 @@ import { WysiwygView, type WysiwygViewHandle } from './editors/wysiwyg/WysiwygVi
 import { useDocument } from './hooks/useDocument'
 import { useExport } from './hooks/useExport'
 import { useScrollSync } from './hooks/useScrollSync'
+import { useTemplateLook } from './hooks/useTemplateLook'
 
 export function App() {
   const document = useDocument()
@@ -20,6 +21,7 @@ export function App() {
   const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null)
   const documentKey = String(document.state.generation)
   const exporter = useExport(document.state)
+  const templateCss = useTemplateLook(exporter.template, document.reportError)
 
   useScrollSync(document.state.content, documentKey, viewMode === 'split', codeRef, wysiwygRef)
 
@@ -73,6 +75,7 @@ export function App() {
           value={document.state.content}
           onChange={document.edit}
           onError={document.reportError}
+          templateCss={templateCss}
         />
         <CodeView
           ref={codeRef}

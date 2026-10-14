@@ -16,6 +16,7 @@ export interface DocumentController {
   readonly error: string | null
   edit(content: string): void
   open(): Promise<void>
+  importDocx(): Promise<void>
   save(): Promise<void>
   saveAs(): Promise<void>
   clearError(): void
@@ -88,22 +89,46 @@ export function useDocument(): DocumentController {
     [run, t],
   )
 
+  const importDocx = useCallback(
+    () =>
+      run(async () => {
+        if (isDirty(stateRef.current) && !window.confirm(t('document.discardAndOpen'))) {
+          return
+        }
+        const imported = await window.marcdoc.importDocx()
+        if (imported) dispatch({ type: 'opened', path: imported.path, content: imported.content })
+      }),
+    [run, t],
+  )
+
   useEffect(
     () =>
       window.marcdoc.onMenuCommand((command) => {
         const actions: Partial<Record<MenuCommand, () => Promise<void>>> = {
           open,
+          'import-docx': importDocx,
           save,
           'save-as': saveAs,
         }
         void actions[command]?.()
       }),
-    [open, save, saveAs],
+    [open, importDocx, save, saveAs],
   )
 
   const edit = useCallback((content: string) => dispatch({ type: 'edited', content }), [])
   const clearError = useCallback(() => setError(null), [setError])
   const reportError = useCallback((message: string) => setError(message), [setError])
 
-  return { state, isDirty: dirty, error, edit, open, save, saveAs, clearError, reportError }
+  return {
+    state,
+    isDirty: dirty,
+    error,
+    edit,
+    open,
+    importDocx,
+    save,
+    saveAs,
+    clearError,
+    reportError,
+  }
 }

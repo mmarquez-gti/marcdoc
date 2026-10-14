@@ -6,16 +6,21 @@ import {
   loadTemplate,
   mappingPathFor,
   parseMapping,
+  readTemplateLook,
   serializeMapping,
   templateCoverTags,
   templateStyles,
+  type StyleInfo,
   type StyleMapping,
+  type TemplateLook,
 } from '../../core/docx'
 import type { TemplateDetails, TemplateInfo } from '../../shared/ipc'
 
 const TEMPLATE_EXTENSIONS = /\.(docx|dotx)$/i
+/** Bundled template used when no template is chosen. */
+const DEFAULT_TEMPLATE_FILE = 'marcdoc-default.docx'
 /** Bundled templates that are not offered as samples (used when no template is chosen). */
-const HIDDEN_TEMPLATES = new Set(['marcdoc-default.docx'])
+const HIDDEN_TEMPLATES = new Set([DEFAULT_TEMPLATE_FILE])
 
 /**
  * Lists bundled templates and remembers the ones the user picked. Export only accepts these,
@@ -71,6 +76,15 @@ export class TemplateService {
     }
   }
 
+  /** How a template formats each Markdown element; null is MarcDoc's default template. */
+  async look(path: string | null): Promise<TemplateLook> {
+    if (path !== null) await this.assertAllowed(path)
+    const templatePath = path ?? join(this.bundledDir, DEFAULT_TEMPLATE_FILE)
+    const template = await loadTemplate(await readFile(templatePath))
+    const mapping = await usableMapping(templatePath, await templateStyles(template))
+    return readTemplateLook(template, mapping)
+  }
+
   async saveMapping(path: string, mapping: unknown): Promise<TemplateInfo> {
     if (!this.chosen.has(path))
       throw new Error('Only templates you chose can have their mapping changed.')
@@ -100,6 +114,24 @@ export class TemplateService {
       name: basename(path),
       hasMappingFile: await exists(mappingPathFor(path)),
     }
+  }
+}
+
+/**
+ * The template's mapping file, or the mapping from its built-in style names when there is none
+ * or it is invalid. The look is only a preview: the mapping editor and the export report the
+ * invalid file, so the document view does not fail over it.
+ */
+async function usableMapping(
+  templatePath: string,
+  styles: readonly StyleInfo[],
+): Promise<StyleMapping> {
+  const mappingPath = mappingPathFor(templatePath)
+  if (!(await exists(mappingPath))) return defaultMapping(styles)
+  try {
+    return parseMapping(JSON.parse(await readFile(mappingPath, 'utf8')))
+  } catch {
+    return defaultMapping(styles)
   }
 }
 
