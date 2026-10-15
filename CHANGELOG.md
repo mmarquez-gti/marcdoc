@@ -4,7 +4,7 @@ All notable changes to MarcDoc are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [0.1.3] - 2026-10-14
+## [0.1.3] - 2026-10-15
 
 ### Added
 
@@ -13,11 +13,21 @@ All notable changes to MarcDoc are recorded here. The format follows
   `marcdoc open <file>` opens a file in the editor and returns at once; `marcdoc templates`
   lists the bundled Word templates.
 - Files given on the command line or opened from the file manager are opened at start-up.
+- Light command line, `marcdoc-cli`: the `export` and `templates` commands on plain Node.js,
+  without Electron, in a 150 KB archive (`npm run build:cli`). PDF through HTML is printed with
+  Google Chrome or Chromium.
 
 ### Changed
 
 - MarcDoc runs as a single instance: launching it again with a file opens that file in the
   existing window (after asking about unsaved changes) instead of starting a second window.
+
+### Fixed
+
+- Word export failed with "Unsupported image type: media/rIdN.svgz" for any SVG image. Pandoc
+  stores SVG images with the .svgz extension; they are now copied as .svg, and compressed ones
+  are decompressed, since Word reads only plain SVG.
+- The command line kept running for two minutes after reporting that Pandoc was missing.
 
 ## [0.1.2] - 2026-10-13
 
