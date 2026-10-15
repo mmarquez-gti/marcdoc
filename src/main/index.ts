@@ -24,6 +24,7 @@ import { LocaleController } from './locale'
 import { registerIpcHandlers, type WindowState } from './ipc'
 import { buildApplicationMenu } from './menu'
 import { ExportService } from './export/exportService'
+import { printHtmlToPdf } from './export/htmlToPdf'
 import { importLuaFilters } from './export/filters'
 import { resourcesDir } from './export/resources'
 import { AssetService } from './services/assetService'
@@ -78,7 +79,7 @@ function createMainWindow(i18n: LocaleController): MainWindow {
   const importer = new ImportService(files, importLuaFilters(resourcesDir()))
   const assets = new AssetService(() => files.currentPath)
   protocol.handle(ASSET_PROTOCOL, (request) => assets.serve(request.url))
-  const exporter = new ExportService(resourcesDir())
+  const exporter = new ExportService(resourcesDir(), printHtmlToPdf)
   const templates = new TemplateService(join(resourcesDir(), BUNDLED_TEMPLATES_DIR))
   const latexTemplates = new LatexTemplateService(join(resourcesDir(), 'templates/latex'))
   const openRequests = new OpenRequests((path) =>
@@ -260,7 +261,13 @@ if (command instanceof CliUsageError) {
       break
     case 'export':
       runCommand(
-        () => runExport(command, process.cwd(), new ExportService(resourcesDir()), stdio),
+        () =>
+          runExport(
+            command,
+            process.cwd(),
+            new ExportService(resourcesDir(), printHtmlToPdf),
+            stdio,
+          ),
         true,
       )
       break

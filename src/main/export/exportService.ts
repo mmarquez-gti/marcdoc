@@ -11,7 +11,6 @@ import {
 } from '../../core'
 import type { ExportResult } from '../../shared/ipc'
 import { exportDocx } from './docxExport'
-import { printHtmlToPdf } from './htmlToPdf'
 import { exportLuaFilters } from './filters'
 import { runPandoc } from './pandocRunner'
 
@@ -30,8 +29,14 @@ export interface ExportJob {
   readonly latexTemplatePath?: string | null
 }
 
+/** Prints a self-contained HTML file to PDF (Electron in the app, Chrome in the light CLI). */
+export type HtmlToPdf = (htmlPath: string, outputPath: string) => Promise<void>
+
 export class ExportService {
-  constructor(private readonly resourcesDir: string) {}
+  constructor(
+    private readonly resourcesDir: string,
+    private readonly printHtmlToPdf: HtmlToPdf,
+  ) {}
 
   async export(job: ExportJob): Promise<ExportResult> {
     const workDir = await mkdtemp(join(tmpdir(), 'marcdoc-export-'))
@@ -88,7 +93,7 @@ export class ExportService {
           job.markdown,
           options,
         )
-        await printHtmlToPdf(htmlPath, job.outputPath)
+        await this.printHtmlToPdf(htmlPath, job.outputPath)
         return warnings
       }
       case 'docx':
