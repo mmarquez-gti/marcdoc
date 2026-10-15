@@ -126,6 +126,24 @@ marcdoc templates                                                   # bundled Wo
 MarcDoc runs as a single instance: opening a file while it is running brings it to the open
 window.
 
+### Light command line
+
+`marcdoc-cli` exports without the app: a single Node.js script of about 600 KB plus MarcDoc's
+templates and filters, with no Electron. It runs anywhere Node.js 22.12 or later and Pandoc are
+installed, including servers without a display.
+
+```sh
+npm run build:cli                                    # dist/marcdoc-cli-<version>.tar.gz
+tar -xzf dist/marcdoc-cli-*.tar.gz -C ~/.local/share
+ln -s ~/.local/share/marcdoc-cli-*/marcdoc-cli ~/.local/bin/marcdoc-cli
+marcdoc-cli export report.md --template ~/Templates/university.dotx --json
+```
+
+It has the `export`, `templates` and `help` commands of `marcdoc`, with the same options, output
+and exit codes; it cannot open files in the editor. PDF through HTML is printed by Google Chrome
+or Chromium (found on the PATH, or set `MARCDOC_CHROME`); PDF through LaTeX needs TeX Live as
+in the app.
+
 ### Document view shortcuts
 
 | Shortcut                                            | Action                                                 |
@@ -139,7 +157,7 @@ window.
 ## Documentation
 
 - [docs/adr/](docs/adr/) — design decisions: editor, Word export pipeline, citations,
-  cross-references, platform support, command line.
+  cross-references, platform support, command line, light command line.
 - [docs/validation/word-online-checklist.md](docs/validation/word-online-checklist.md) — how
   Word output is reviewed.
 - [CHANGELOG.md](CHANGELOG.md) — what changed in each version.
@@ -161,6 +179,7 @@ npm run dev
 | `npm test`                        | Unit tests                                                                                                                                            |
 | `npm run test:e2e`                | End-to-end tests against the Electron app                                                                                                             |
 | `npm run test:integration`        | Export the test corpus to Word with every template and validate it (needs Pandoc; Docker for the Open XML SDK; LibreOffice for the visual comparison) |
+| `npm run build:cli`               | Build the light command line into `dist/marcdoc-cli-<version>.tar.gz`                                                                                 |
 | `npm run package`                 | Build the AppImage and .deb into `dist/`                                                                                                              |
 | `npm run test:packaged`           | Smoke test of the packaged app                                                                                                                        |
 | `npm run validation:samples`      | Export review documents for the Word checklist                                                                                                        |

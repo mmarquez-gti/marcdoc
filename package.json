@@ -43,6 +43,7 @@
     "test:e2e": "electron-vite build && playwright test",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "validation:samples": "scripts/run-ts.sh scripts/validation/build-review-samples.ts",
+    "build:cli": "scripts/build-cli.sh",
     "package": "npm run build && electron-builder --linux",
     "package:dir": "npm run build && electron-builder --linux --dir",
     "test:packaged": "npm run package:dir && playwright test -c playwright.packaged.config.ts"

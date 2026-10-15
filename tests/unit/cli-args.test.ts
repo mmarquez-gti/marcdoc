@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { CliUsageError, parseCommandLine, userArguments } from '../../src/core/cli/args'
+import {
+  CliUsageError,
+  parseCommandLine,
+  parseLiteCommandLine,
+  userArguments,
+} from '../../src/core/cli/args'
 
 describe('userArguments', () => {
   it('drops the executable of a packaged app', () => {
@@ -129,5 +134,24 @@ describe('parseCommandLine', () => {
   ])('rejects %j', (args, message) => {
     expect(() => parseCommandLine(args)).toThrow(CliUsageError)
     expect(() => parseCommandLine(args)).toThrow(message)
+  })
+})
+
+describe('parseLiteCommandLine', () => {
+  it('accepts the export, templates and help commands', () => {
+    expect(parseLiteCommandLine(['export', 'a.md', '-f', 'pdf-html'])).toMatchObject({
+      kind: 'export',
+      format: 'pdf-html',
+    })
+    expect(parseLiteCommandLine(['templates'])).toEqual({ kind: 'templates', json: false })
+    expect(parseLiteCommandLine(['--help'])).toEqual({ kind: 'help' })
+  })
+
+  it.each([
+    [[], 'Missing command.'],
+    [['open', 'a.md'], 'Unknown command: open'],
+    [['a.md'], 'Unknown command: a.md'],
+  ])('rejects %j, which needs the editor or no command', (args, message) => {
+    expect(() => parseLiteCommandLine(args)).toThrow(new CliUsageError(message))
   })
 })

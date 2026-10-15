@@ -37,14 +37,7 @@ const WORD_FORMATS: readonly ExportFormat[] = ['docx']
 const LATEX_FORMATS: readonly ExportFormat[] = ['latex', 'pdf-latex']
 const HELP_FLAGS = new Set(['--help', '-h'])
 
-export const CLI_USAGE = `Usage:
-  marcdoc [file]                         Start the editor, optionally opening a file
-  marcdoc open <file>                    Open a file in the editor and return at once
-  marcdoc export <file.md> [options]     Export without opening a window
-  marcdoc templates [--json]             List the bundled Word templates
-  marcdoc help                           Show this help
-
-Export options:
+const EXPORT_USAGE = `Export options:
   -f, --format <format>        ${Object.keys(EXPORT_FORMATS).join(', ')} (default: ${DEFAULT_CLI_FORMAT})
   -o, --output <path>          Output file (default: next to the input, same name)
   -t, --template <path>        Word template (.docx or .dotx) for docx
@@ -52,6 +45,36 @@ Export options:
       --json                   Print the result as JSON
 
 Exit codes: 0 success, 1 export failed, 2 wrong arguments.`
+
+export const CLI_USAGE = `Usage:
+  marcdoc [file]                         Start the editor, optionally opening a file
+  marcdoc open <file>                    Open a file in the editor and return at once
+  marcdoc export <file.md> [options]     Export without opening a window
+  marcdoc templates [--json]             List the bundled Word templates
+  marcdoc help                           Show this help
+
+${EXPORT_USAGE}`
+
+/** The light command line: MarcDoc's exports without Electron (see ADR-0007). */
+export const LITE_CLI_USAGE = `Usage:
+  marcdoc-cli export <file.md> [options]     Export a Markdown file
+  marcdoc-cli templates [--json]             List the bundled Word templates
+  marcdoc-cli help                           Show this help
+
+${EXPORT_USAGE}
+
+pdf-html prints with Google Chrome or Chromium; set MARCDOC_CHROME to choose the browser.`
+
+export type LiteCliCommand = Extract<CliCommand, { kind: 'export' | 'templates' | 'help' }>
+
+/** The commands of the light command line, which has no editor to start or open files in. */
+export function parseLiteCommandLine(args: readonly string[]): LiteCliCommand {
+  if (args.length === 0) throw new CliUsageError('Missing command.')
+  const command = parseCommandLine(args)
+  if (command.kind === 'gui' || command.kind === 'open')
+    throw new CliUsageError(`Unknown command: ${args[0]}`)
+  return command
+}
 
 /**
  * The arguments the user typed, from `process.argv`. Electron and Chromium switches come first

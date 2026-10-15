@@ -76,12 +76,17 @@ export async function runListTemplates(
   return EXIT_SUCCESS
 }
 
-export function showUsage(output: CliOutput, problem: string | null = null): number {
+/** Prints `usage`: on stdout when asked for, on stderr after the problem with the arguments. */
+export function showUsage(
+  output: CliOutput,
+  problem: string | null = null,
+  usage: string = CLI_USAGE,
+): number {
   if (problem === null) {
-    output.out(CLI_USAGE)
+    output.out(usage)
     return EXIT_SUCCESS
   }
-  output.err(`marcdoc: ${problem}\n\n${CLI_USAGE}`)
+  output.err(`marcdoc: ${problem}\n\n${usage}`)
   return EXIT_USAGE
 }
 
