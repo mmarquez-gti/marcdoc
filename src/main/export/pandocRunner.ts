@@ -38,20 +38,24 @@ export function runPandoc(
     const child = spawn('pandoc', [...args], {
       cwd: options.cwd,
       env: options.env ? { ...process.env, ...options.env } : process.env,
-      timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     })
+    // Not spawn's `timeout` option: its timer outlives a Pandoc that could not start, and keeps
+    // the command line running long after reporting the error.
+    const timer = setTimeout(() => child.kill(), options.timeoutMs ?? DEFAULT_TIMEOUT_MS)
     const stdout: Buffer[] = []
     const stderr: Buffer[] = []
     child.stdout.on('data', (chunk: Buffer) => stdout.push(chunk))
     child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk))
-    child.on('error', (error: NodeJS.ErrnoException) =>
+    child.on('error', (error: NodeJS.ErrnoException) => {
+      clearTimeout(timer)
       reject(
         error.code === 'ENOENT'
           ? new UserError('error.pandocMissing')
           : new PandocError(`Could not run Pandoc: ${error.message}`, ''),
-      ),
-    )
+      )
+    })
     child.on('close', (code, signal) => {
+      clearTimeout(timer)
       const errorText = Buffer.concat(stderr).toString('utf8')
       if (code === 0) {
         resolve({ stdout: Buffer.concat(stdout), warnings: parseWarnings(errorText) })
