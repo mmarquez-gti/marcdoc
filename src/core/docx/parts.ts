@@ -81,12 +81,73 @@ function ensureOverride(contentTypes: Document, partName: string, type: string):
   contentTypes.documentElement!.appendChild(entry)
 }
 
+const SVG_CONTENT_TYPE = 'image/svg+xml'
+
+/** Image types a Word document can hold, by the extension MarcDoc gives their parts. */
+const IMAGE_EXTENSIONS: Readonly<Record<string, string>> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpeg',
+  'image/gif': 'gif',
+  [SVG_CONTENT_TYPE]: 'svg',
+}
+
+/** Used when Pandoc declares no content type for an image part. */
 const IMAGE_CONTENT_TYPES: Readonly<Record<string, string>> = {
   png: 'image/png',
   jpeg: 'image/jpeg',
   jpg: 'image/jpeg',
   gif: 'image/gif',
-  svg: 'image/svg+xml',
+  svg: SVG_CONTENT_TYPE,
+}
+
+const GZIP_MAGIC = [0x1f, 0x8b]
+
+/** Content type of a part as declared in [Content_Types].xml: its Override, or its extension's Default. */
+function declaredContentType(contentTypes: Document | null, partName: string): string | null {
+  if (!contentTypes) return null
+  const override = descendants(contentTypes, CT_NS, 'Override').find(
+    (entry) => entry.getAttribute('PartName') === partName,
+  )
+  if (override) return override.getAttribute('ContentType')
+  const extension = partName.split('.').pop()?.toLowerCase()
+  const fallback = descendants(contentTypes, CT_NS, 'Default').find(
+    (entry) => entry.getAttribute('Extension')?.toLowerCase() === extension,
+  )
+  return fallback?.getAttribute('ContentType') ?? null
+}
+
+function isGzip(bytes: Uint8Array): boolean {
+  return GZIP_MAGIC.every((byte, index) => bytes[index] === byte)
+}
+
+async function gunzip(bytes: Uint8Array): Promise<Uint8Array> {
+  // The copy is backed by a plain ArrayBuffer, which Blob requires.
+  const compressed = new Blob([new Uint8Array(bytes)]).stream()
+  const stream = compressed.pipeThrough(new DecompressionStream('gzip'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
+}
+
+/**
+ * Bytes and extension of an image part for the template. Pandoc 3.1 stores every SVG as
+ * `.svgz`, compressed or not, and declares it as image/svg+xml; Word reads only plain SVG.
+ */
+async function imagePart(
+  source: Package,
+  sourceContentTypes: Document | null,
+  target: string,
+): Promise<{ bytes: Uint8Array; extension: string; contentType: string }> {
+  const contentType =
+    declaredContentType(sourceContentTypes, `/word/${target}`) ??
+    IMAGE_CONTENT_TYPES[target.split('.').pop()?.toLowerCase() ?? '']
+  const extension = contentType ? IMAGE_EXTENSIONS[contentType] : undefined
+  if (!contentType || !extension)
+    throw new Error(`Unsupported image type: ${target}${contentType ? ` (${contentType})` : ''}`)
+  const bytes = await source.readBinary(`word/${target}`)
+  return {
+    bytes: contentType === SVG_CONTENT_TYPE && isGzip(bytes) ? await gunzip(bytes) : bytes,
+    extension,
+    contentType,
+  }
 }
 
 /** Copies hyperlinks and images referenced by `blocks`; returns old -> new relationship IDs. */
@@ -100,6 +161,9 @@ export async function copyRelationships(
 ): Promise<Map<string, string>> {
   const used = referencedRelIds(blocks)
   const result = new Map<string, string>()
+  const sourceContentTypes = source.has('[Content_Types].xml')
+    ? await source.readXml('[Content_Types].xml')
+    : null
 
   for (const rel of relationships(sourceRels)) {
     const id = rel.getAttribute('Id') ?? ''
@@ -110,11 +174,9 @@ export async function copyRelationships(
     if (rel.getAttribute('TargetMode') === 'External') {
       result.set(id, addRelationship(templateRels, type, target, true))
     } else if (type === `${REL_TYPE}/image`) {
-      const extension = target.split('.').pop() ?? ''
-      const contentType = IMAGE_CONTENT_TYPES[extension.toLowerCase()]
-      if (!contentType) throw new Error(`Unsupported image type: ${target}`)
+      const { bytes, extension, contentType } = await imagePart(source, sourceContentTypes, target)
       const newTarget = `media/marcdoc-${id}.${extension}`
-      template.writeBinary(`word/${newTarget}`, await source.readBinary(`word/${target}`))
+      template.writeBinary(`word/${newTarget}`, bytes)
       ensureDefaultContentType(contentTypes, extension, contentType)
       result.set(id, addRelationship(templateRels, type, newTarget, false))
     } else {

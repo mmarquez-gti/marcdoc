@@ -41,6 +41,8 @@ const KNOWN_NAMESPACES = new Set([
   'http://schemas.microsoft.com/office/word/2010/wordprocessingGroup',
   'http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing',
   'http://schemas.microsoft.com/office/drawing/2010/main',
+  // SVG images (asvg:svgBlip), which Word itself writes without marking them ignorable.
+  'http://schemas.microsoft.com/office/drawing/2016/SVG/main',
   'urn:schemas-microsoft-com:vml',
   'urn:schemas-microsoft-com:office:office',
   'urn:schemas-microsoft-com:office:word',

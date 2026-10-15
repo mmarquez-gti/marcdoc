@@ -95,6 +95,15 @@ describe('lintDocx', () => {
     )
   })
 
+  it('accepts the SVG images of Word 2016, which Word does not mark ignorable', async () => {
+    const svgBlip =
+      '<asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main"/>'
+    const bytes = await docx({ body: `<w:p>${svgBlip}</w:p>` })
+    expect(messages(await lintDocx(bytes))).not.toContainEqual(
+      expect.stringContaining('unknown namespace'),
+    )
+  })
+
   it('warns about direct font formatting', async () => {
     const bytes = await docx({
       body: '<w:p><w:r><w:rPr><w:sz w:val="40"/></w:rPr><w:t>big</w:t></w:r></w:p>',
