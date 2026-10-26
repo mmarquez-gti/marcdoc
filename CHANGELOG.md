@@ -12,6 +12,10 @@ All notable changes to MarcDoc are recorded here. The format follows
   editing it. Without unsaved changes, the editor shows the new content in place. With unsaved
   changes, a banner asks whether to use the version on disk or keep your own.
 - A warning appears when the open file is deleted or moved; saving writes it again.
+- Review of outside changes: when another program changes the open file, or changed it while
+  MarcDoc was closed, the source view shows what changed since you last reviewed the document.
+  Accept or reject each change, or all at once from the review bar. The reviewed version is
+  kept in MarcDoc's own settings folder, not next to your files.
 
 ### Fixed
 

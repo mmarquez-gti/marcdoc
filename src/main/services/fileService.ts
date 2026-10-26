@@ -1,9 +1,14 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { extname } from 'node:path'
 import { detectLineEnding, toLf, withLineEnding, type LineEnding } from '../../core'
-import type { OpenedDocument } from '../../shared/ipc'
 
 const MARKDOWN_EXTENSION = '.md'
+
+/** A Markdown file and its content, with LF line endings. */
+export interface DocumentFile {
+  readonly path: string
+  readonly content: string
+}
 
 /** What a file holds now compared with what MarcDoc last read from or wrote to it. */
 export type DiskCheck =
@@ -35,7 +40,7 @@ export class FileService {
     return this.current
   }
 
-  async open(path: string): Promise<OpenedDocument> {
+  async open(path: string): Promise<DocumentFile> {
     const raw = await readFile(path, 'utf8')
     this.lineEndings.set(path, detectLineEnding(raw))
     const content = toLf(raw)
@@ -66,7 +71,7 @@ export class FileService {
    * Writes made by this service read as unchanged.
    */
   async checkDisk(path: string): Promise<DiskCheck> {
-    if (!this.lineEndings.has(path)) throw new Error(`${path} was not opened or saved`)
+    this.assertKnown(path)
     let raw: string
     try {
       raw = await readFile(path, 'utf8')
@@ -82,6 +87,11 @@ export class FileService {
     if (!reappeared && content === this.lastKnown.get(path)) return { kind: 'unchanged' }
     this.remember(path, content)
     return { kind: 'changed', content }
+  }
+
+  /** Fails unless `path` was opened or saved in this session. */
+  assertKnown(path: string): void {
+    if (!this.lineEndings.has(path)) throw new Error(`${path} was not opened or saved`)
   }
 
   private async write(path: string, content: string, ending: LineEnding): Promise<void> {

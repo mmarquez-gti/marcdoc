@@ -6,9 +6,10 @@ import {
   fileNameOf,
   formatWindowTitle,
   isDirty,
+  reviewedVersion,
   type DocumentState,
 } from '../../../core'
-import type { MenuCommand } from '../../../shared/ipc'
+import type { MenuCommand, OpenedDocument } from '../../../shared/ipc'
 
 export interface DocumentController {
   readonly state: DocumentState
@@ -25,6 +26,14 @@ export interface DocumentController {
   reloadFromDisk(): void
   /** Resolves a conflict with the file on disk by keeping the unsaved changes. */
   keepOwnVersion(): void
+  /** Takes some of the changes under review: `baseline` is the reviewed version with them. */
+  acceptChanges(baseline: string): void
+  acceptAllChanges(): void
+  rejectAllChanges(): void
+}
+
+function openedAction(opened: OpenedDocument) {
+  return { type: 'opened', ...opened } as const
 }
 
 export function useDocument(): DocumentController {
@@ -88,7 +97,7 @@ export function useDocument(): DocumentController {
           return
         }
         const opened = await window.marcdoc.openDocument()
-        if (opened) dispatch({ type: 'opened', path: opened.path, content: opened.content })
+        if (opened) dispatch(openedAction(opened))
       }),
     [run, t],
   )
@@ -102,8 +111,7 @@ export function useDocument(): DocumentController {
             if (isDirty(stateRef.current) && !window.confirm(t('document.discardAndOpen'))) {
               return
             }
-            const opened = await window.marcdoc.openRequestedDocument(path)
-            dispatch({ type: 'opened', path: opened.path, content: opened.content })
+            dispatch(openedAction(await window.marcdoc.openRequestedDocument(path)))
           }),
       ),
     [run, t],
@@ -124,6 +132,21 @@ export function useDocument(): DocumentController {
     [],
   )
 
+  // Remembers what the user has reviewed, so changes made while MarcDoc is closed show up for
+  // review the next time the file opens.
+  const reviewed = reviewedVersion(state)
+  const lastStoredRef = useRef<{ path: string; baseline: string } | null>(null)
+  useEffect(() => {
+    const path = state.path
+    if (path === null || reviewed === null) return
+    const last = lastStoredRef.current
+    if (last?.path === path && last.baseline === reviewed) return
+    lastStoredRef.current = { path, baseline: reviewed }
+    window.marcdoc
+      .saveReviewBaseline(path, reviewed)
+      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause)))
+  }, [state.path, reviewed])
+
   const importDocx = useCallback(
     () =>
       run(async () => {
@@ -131,7 +154,7 @@ export function useDocument(): DocumentController {
           return
         }
         const imported = await window.marcdoc.importDocx()
-        if (imported) dispatch({ type: 'opened', path: imported.path, content: imported.content })
+        if (imported) dispatch(openedAction(imported))
       }),
     [run, t],
   )
@@ -155,6 +178,12 @@ export function useDocument(): DocumentController {
   const reportError = useCallback((message: string) => setError(message), [setError])
   const reloadFromDisk = useCallback(() => dispatch({ type: 'reloadedFromDisk' }), [])
   const keepOwnVersion = useCallback(() => dispatch({ type: 'keptOwnVersion' }), [])
+  const acceptChanges = useCallback(
+    (baseline: string) => dispatch({ type: 'reviewAccepted', baseline }),
+    [],
+  )
+  const acceptAllChanges = useCallback(() => dispatch({ type: 'acceptedAllChanges' }), [])
+  const rejectAllChanges = useCallback(() => dispatch({ type: 'rejectedAllChanges' }), [])
 
   return {
     state,
@@ -169,5 +198,8 @@ export function useDocument(): DocumentController {
     reportError,
     reloadFromDisk,
     keepOwnVersion,
+    acceptChanges,
+    acceptAllChanges,
+    rejectAllChanges,
   }
 }

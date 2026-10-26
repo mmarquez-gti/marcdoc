@@ -1,13 +1,14 @@
 import { dirname, join } from 'node:path'
 import { dialog, ipcMain, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { defaultOutputName, EXPORT_FORMATS, importedMarkdownName } from '../core'
-import { IpcChannel, type ExportRequest } from '../shared/ipc'
+import { IpcChannel, type ExportRequest, type OpenedDocument } from '../shared/ipc'
 import type { ExportService } from './export/exportService'
 import type { AssetService } from './services/assetService'
 import type { FileService } from './services/fileService'
 import type { ImportService } from './services/importService'
 import type { LatexTemplateService } from './services/latexTemplateService'
 import type { OpenRequests } from './services/openRequests'
+import type { ReviewStore } from './services/reviewStore'
 import type { TemplateService } from './services/templateService'
 import { detectToolchain } from './services/toolchainDetector'
 import type { LocaleController } from './locale'
@@ -27,11 +28,12 @@ export interface Services {
   readonly templates: TemplateService
   readonly latexTemplates: LatexTemplateService
   readonly openRequests: OpenRequests
+  readonly reviews: ReviewStore
 }
 
 export function registerIpcHandlers(
   window: BrowserWindow,
-  { files, importer, assets, exporter, templates, latexTemplates, openRequests }: Services,
+  { files, importer, assets, exporter, templates, latexTemplates, openRequests, reviews }: Services,
   state: WindowState,
   i18n: LocaleController,
 ): () => void {
@@ -60,6 +62,12 @@ export function registerIpcHandlers(
     })
   }
 
+  /** Opens a file with the version reviewed last time, to review what changed since. */
+  const openWithBaseline = async (path: string): Promise<OpenedDocument> => {
+    const opened = await files.open(path)
+    return { ...opened, baseline: await reviews.load(opened.path) }
+  }
+
   const on = (channel: string, listener: IpcListener) => {
     listeners.push([channel, listener])
     ipcMain.on(channel, listener)
@@ -78,14 +86,14 @@ export function registerIpcHandlers(
       filters: markdownFilters(),
     })
     const path = result.filePaths[0]
-    return result.canceled || !path ? null : files.open(path)
+    return result.canceled || !path ? null : openWithBaseline(path)
   })
 
   on(IpcChannel.OpenRequestsReady, () => openRequests.markReady())
 
   handle(IpcChannel.OpenRequestedDocument, (_event, path: string) => {
     openRequests.assertRequested(path)
-    return files.open(path)
+    return openWithBaseline(path)
   })
 
   handle(IpcChannel.ImportDocx, async () => {
@@ -100,7 +108,9 @@ export function registerIpcHandlers(
       filters: markdownFilters(),
     })
     if (target.canceled || !target.filePath) return null
-    return importer.importDocx(docxPath, target.filePath)
+    // A new file: anything recorded for an earlier file at that path no longer applies.
+    const imported = await importer.importDocx(docxPath, target.filePath)
+    return { ...imported, baseline: null }
   })
 
   handle(IpcChannel.SaveDocument, (_event, path: string, content: string) =>
@@ -113,6 +123,14 @@ export function registerIpcHandlers(
       filters: markdownFilters(),
     })
     return result.canceled || !result.filePath ? null : files.saveAs(result.filePath, content)
+  })
+
+  handle(IpcChannel.SaveReviewBaseline, (_event, path: unknown, baseline: unknown) => {
+    if (typeof path !== 'string' || typeof baseline !== 'string') {
+      throw new Error('Invalid review baseline.')
+    }
+    files.assertKnown(path)
+    return reviews.save(path, baseline)
   })
 
   on(IpcChannel.SetDirty, (_event, isDirty: boolean) => {

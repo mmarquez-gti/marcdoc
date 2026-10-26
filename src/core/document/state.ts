@@ -15,10 +15,21 @@ export interface DocumentState {
   readonly diskConflict: string | null
   /** The file was deleted or moved away on disk after it was opened or saved. */
   readonly missingOnDisk: boolean
+  /**
+   * Version the user last reviewed, while the content differs from it: the changes between
+   * them are shown for review. Null when there is nothing to review.
+   */
+  readonly baseline: string | null
 }
 
 export type DocumentAction =
-  | { readonly type: 'opened'; readonly path: string; readonly content: string }
+  | {
+      readonly type: 'opened'
+      readonly path: string
+      readonly content: string
+      /** Version reviewed the last time the file was open, if known. */
+      readonly baseline?: string | null
+    }
   | { readonly type: 'edited'; readonly content: string }
   | { readonly type: 'saved'; readonly path: string; readonly content: string }
   /** Another program changed the file. */
@@ -28,6 +39,11 @@ export type DocumentAction =
   | { readonly type: 'reloadedFromDisk' }
   /** Conflict resolved by keeping the unsaved changes; saving will overwrite the file. */
   | { readonly type: 'keptOwnVersion' }
+  /** Some changes were accepted: the reviewed version now includes them. */
+  | { readonly type: 'reviewAccepted'; readonly baseline: string }
+  | { readonly type: 'acceptedAllChanges' }
+  /** Every change under review is undone: the content goes back to the reviewed version. */
+  | { readonly type: 'rejectedAllChanges' }
 
 export const EMPTY_DOCUMENT: DocumentState = {
   path: null,
@@ -36,6 +52,7 @@ export const EMPTY_DOCUMENT: DocumentState = {
   generation: 0,
   diskConflict: null,
   missingOnDisk: false,
+  baseline: null,
 }
 
 export function documentReducer(state: DocumentState, action: DocumentAction): DocumentState {
@@ -48,9 +65,15 @@ export function documentReducer(state: DocumentState, action: DocumentAction): D
         generation: state.generation + 1,
         diskConflict: null,
         missingOnDisk: false,
+        baseline: underReview(action.baseline ?? null, action.content),
       }
     case 'edited':
-      return action.content === state.content ? state : { ...state, content: action.content }
+      if (action.content === state.content) return state
+      return {
+        ...state,
+        content: action.content,
+        baseline: underReview(state.baseline, action.content),
+      }
     case 'saved':
       // Edits made while the save was in flight stay unsaved.
       return {
@@ -71,7 +94,18 @@ export function documentReducer(state: DocumentState, action: DocumentAction): D
       if (state.diskConflict === null) return state
       // The file now holds the other version, so the editor's content is unsaved against it.
       return { ...state, savedContent: state.diskConflict, diskConflict: null }
+    case 'reviewAccepted':
+      return { ...state, baseline: underReview(action.baseline, state.content) }
+    case 'acceptedAllChanges':
+      return { ...state, baseline: null }
+    case 'rejectedAllChanges':
+      return { ...state, content: state.baseline ?? state.content, baseline: null }
   }
+}
+
+/** The baseline to keep: none once the content matches it, since nothing is left to review. */
+function underReview(baseline: string | null, content: string): string | null {
+  return baseline === content ? null : baseline
 }
 
 function changedOnDisk(state: DocumentState, content: string): DocumentState {
@@ -82,10 +116,26 @@ function changedOnDisk(state: DocumentState, content: string): DocumentState {
 
 /**
  * Takes the content on disk as the document. The generation stays the same: the views apply
- * the change in place, keeping the cursor and the undo history.
+ * the change in place, keeping the cursor and the undo history. What the file held before is
+ * the version to review the change against, unless a review was already under way.
  */
 function reloaded(state: DocumentState, content: string): DocumentState {
-  return { ...state, content, savedContent: content, diskConflict: null, missingOnDisk: false }
+  return {
+    ...state,
+    content,
+    savedContent: content,
+    diskConflict: null,
+    missingOnDisk: false,
+    baseline: underReview(state.baseline ?? state.savedContent, content),
+  }
+}
+
+/**
+ * Version of the document to remember as reviewed: the baseline during a review, otherwise
+ * the content on disk. Null for a document that was never saved.
+ */
+export function reviewedVersion(state: DocumentState): string | null {
+  return state.path === null ? null : (state.baseline ?? state.savedContent)
 }
 
 export function isDirty(state: DocumentState): boolean {

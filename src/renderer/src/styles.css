@@ -394,6 +394,17 @@ input:focus-visible {
   margin-top: 6px;
 }
 
+.review-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-bar > span {
+  margin-right: 6px;
+}
+
 .banner-info {
   --banner-colour: var(--info);
 }

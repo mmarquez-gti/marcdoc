@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { fileNameOf } from '../../core'
+import { countChanges } from '../../core/review/changes'
 import type { ViewMode } from '../../shared/ipc'
 import { Banner } from './components/Banner'
 import { DiskStatusBanner } from './components/DiskStatusBanner'
 import { ExportDialog } from './components/ExportDialog'
 import { ExportStatusBanner } from './components/ExportStatusBanner'
+import { ReviewBar } from './components/ReviewBar'
 import { ToolchainBanner } from './components/ToolchainBanner'
 import { Toolbar } from './components/Toolbar'
 import { CodeView, type CodeViewHandle } from './editors/code/CodeView'
@@ -23,6 +25,12 @@ export function App() {
   const documentKey = String(document.state.generation)
   const exporter = useExport(document.state)
   const templateCss = useTemplateLook(exporter.template, document.reportError)
+
+  const { baseline, content } = document.state
+  const pendingChanges = useMemo(
+    () => (baseline === null ? 0 : countChanges(baseline, content)),
+    [baseline, content],
+  )
 
   useScrollSync(document.state.content, documentKey, viewMode === 'split', codeRef, wysiwygRef)
 
@@ -55,6 +63,18 @@ export function App() {
         onReload={document.reloadFromDisk}
         onKeepOwn={document.keepOwnVersion}
       />
+      {pendingChanges > 0 && (
+        <ReviewBar
+          count={pendingChanges}
+          onGoTo={
+            viewMode === 'wysiwyg'
+              ? undefined
+              : (direction) => codeRef.current?.goToChange(direction)
+          }
+          onAcceptAll={document.acceptAllChanges}
+          onRejectAll={document.rejectAllChanges}
+        />
+      )}
       <ExportStatusBanner status={exporter.status} onDismiss={exporter.dismiss} />
       {exporter.dialogOpen && (
         <ExportDialog
@@ -88,6 +108,8 @@ export function App() {
           documentKey={documentKey}
           value={document.state.content}
           onChange={document.edit}
+          baseline={baseline}
+          onAccept={document.acceptChanges}
         />
       </main>
     </div>

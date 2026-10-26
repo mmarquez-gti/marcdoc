@@ -23,6 +23,8 @@ const api: MarcDocApi = {
   saveDocumentAs: (content, currentPath) =>
     ipcRenderer.invoke(IpcChannel.SaveDocumentAs, content, currentPath),
   setDirty: (isDirty) => ipcRenderer.send(IpcChannel.SetDirty, isDirty),
+  saveReviewBaseline: (path, baseline) =>
+    ipcRenderer.invoke(IpcChannel.SaveReviewBaseline, path, baseline),
   onDiskEvent: (listener) => {
     const handler = (_event: IpcRendererEvent, diskEvent: DiskEvent) => listener(diskEvent)
     ipcRenderer.on(IpcChannel.DiskEvent, handler)

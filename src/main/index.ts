@@ -33,6 +33,7 @@ import { FileWatcher } from './services/fileWatcher'
 import { ImportService } from './services/importService'
 import { LatexTemplateService } from './services/latexTemplateService'
 import { OpenRequests } from './services/openRequests'
+import { ReviewStore } from './services/reviewStore'
 import { SettingsService } from './services/settingsService'
 import { TemplateService } from './services/templateService'
 
@@ -104,9 +105,10 @@ function createMainWindow(i18n: LocaleController): MainWindow {
   const openRequests = new OpenRequests((path) =>
     window.webContents.send(IpcChannel.OpenRequested, path),
   )
+  const reviews = new ReviewStore(join(app.getPath('userData'), 'review'))
   const disposeIpc = registerIpcHandlers(
     window,
-    { files, importer, assets, exporter, templates, latexTemplates, openRequests },
+    { files, importer, assets, exporter, templates, latexTemplates, openRequests, reviews },
     state,
     i18n,
   )

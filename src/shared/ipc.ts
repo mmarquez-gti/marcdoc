@@ -11,6 +11,7 @@ export const IpcChannel = {
   SaveDocumentAs: 'document:save-as',
   SetDirty: 'document:set-dirty',
   DiskEvent: 'document:disk-event',
+  SaveReviewBaseline: 'review:save-baseline',
   GetToolchainStatus: 'toolchain:status',
   ImportAsset: 'asset:import',
   ExportDocument: 'document:export',
@@ -87,6 +88,8 @@ export interface ExportResult {
 export interface OpenedDocument {
   readonly path: string
   readonly content: string
+  /** Version reviewed the last time the file was open, or null if none was recorded. */
+  readonly baseline: string | null
 }
 
 /** Another program changed or removed the open document's file. */
@@ -134,6 +137,8 @@ export interface MarcDocApi {
   setDirty(isDirty: boolean): void
   /** Subscribes to changes made on disk to the open document; returns an unsubscribe function. */
   onDiskEvent(listener: (event: DiskEvent) => void): () => void
+  /** Remembers the version of a document the user has reviewed (ADR-0008). */
+  saveReviewBaseline(path: string, baseline: string): Promise<void>
   getToolchainStatus(): Promise<ToolStatus[]>
   /**
    * Copies an image into the document's `assets/` folder; resolves to the path to use in
