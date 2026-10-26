@@ -304,7 +304,7 @@ Ver ADR-0008. Objetivo: ver resaltado lo que otro programa (sobre todo Claude Co
 | R10 | Poca dedicación semanal: se amplía el alcance o se pierde el contexto entre sesiones | Alta | Medio | Hitos pequeños, ADRs y notas de estado en cada hito |
 | R11 | Un test e2e de escritura en el WYSIWYG falla de forma intermitente (≈1 de cada 6 ejecuciones completas, siempre tras las pruebas de integración); causa no identificada | Media | Bajo | Investigar si es el test o el editor bajo carga; no se ha ocultado con reintentos |
 | R12 | Windows y macOS no se han probado (ADR-0005) | Alta | Alto | CI con ejecutores Windows/macOS o prueba manual antes de anunciar soporte |
-| R13 | Hasta H5.1, guardar sobrescribe sin aviso los cambios hechos en disco por otro programa con el documento abierto | Alta | Alto | H5.1 vigila el archivo y avisa del conflicto antes de guardar |
+| R13 | ~~Hasta H5.1, guardar sobrescribe sin aviso los cambios hechos en disco por otro programa con el documento abierto~~ Cerrado en H5.1 | Alta | Alto | H5.1 vigila el archivo y avisa del conflicto antes de guardar |
 | R14 | La revisión en el WYSIWYG es por bloque, menos precisa que en la vista de código; con cambios propios y externos a la vez solo se conserva una versión | Media | Medio | Documentado en ADR-0008; ampliar a fusión o a revisión por palabra si el uso lo pide |
 
 ## 8. Supuestos y preguntas abiertas
@@ -347,3 +347,4 @@ Ver ADR-0008. Objetivo: ver resaltado lo que otro programa (sobre todo Claude Co
 | 09/10/2026 | H4.3 | Código portable (rutas, `TEXINPUTS`, CRLF, convenciones de macOS) y objetivos de Windows y macOS. **Sin probar en esos sistemas** (ADR-0005) |
 | 09/10/2026 | **Fase 4 completada** | 225 tests unitarios, 59 de integración, 52 e2e y la prueba del paquete. Pendiente: revisión en Word Online; pruebas en Windows y macOS |
 | 26/10/2026 | H5.0 | ADR-0008: revisión de cambios externos sin git, línea base en `userData`, `@codemirror/merge` 6.12.2. Siguiente: H5.1 (vigilar el archivo) |
+| 26/10/2026 | H5.1 | `FileWatcher` (directorio, *debounce* de 150 ms) y `FileService.checkDisk` (ignora escrituras propias, sigue el final de línea del disco); recarga en el sitio o banner de conflicto; aviso de archivo borrado. R13 cerrado. 355 tests unitarios y 65 e2e en verde. Siguiente: H5.2 |

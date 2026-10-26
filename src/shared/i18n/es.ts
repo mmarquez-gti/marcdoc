@@ -26,6 +26,11 @@ export const es: Messages = {
   'toolbar.unsaved': 'Cambios sin guardar',
 
   'document.discardAndOpen': '¿Descartar los cambios sin guardar y abrir otro archivo?',
+  'disk.conflict':
+    'Otro programa ha cambiado este archivo mientras tenías cambios sin guardar. ¿Qué versión quieres conservar?',
+  'disk.reload': 'Usar la del disco',
+  'disk.keepOwn': 'Conservar la mía',
+  'disk.missing': 'El archivo se ha borrado o movido. Guarda para volver a escribirlo.',
   'editor.document': 'Documento',
   'editor.source': 'Código Markdown',
 

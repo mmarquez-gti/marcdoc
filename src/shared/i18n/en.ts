@@ -25,6 +25,11 @@ export const en = {
   'toolbar.unsaved': 'Unsaved changes',
 
   'document.discardAndOpen': 'Discard unsaved changes and open another file?',
+  'disk.conflict':
+    'Another program changed this file while you had unsaved changes. Which version do you want to keep?',
+  'disk.reload': 'Use the version on disk',
+  'disk.keepOwn': 'Keep mine',
+  'disk.missing': 'The file was deleted or moved. Save to write it again.',
   'editor.document': 'Document',
   'editor.source': 'Markdown source',
 

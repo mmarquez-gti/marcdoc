@@ -8,18 +8,34 @@ export interface DocumentState {
   readonly savedContent: string
   /** Incremented each time a different document is loaded; views reset undo history on change. */
   readonly generation: number
+  /**
+   * Content another program wrote to the file while there were unsaved changes, waiting for
+   * the user to choose between it and their own version; null when there is no conflict.
+   */
+  readonly diskConflict: string | null
+  /** The file was deleted or moved away on disk after it was opened or saved. */
+  readonly missingOnDisk: boolean
 }
 
 export type DocumentAction =
   | { readonly type: 'opened'; readonly path: string; readonly content: string }
   | { readonly type: 'edited'; readonly content: string }
   | { readonly type: 'saved'; readonly path: string; readonly content: string }
+  /** Another program changed the file. */
+  | { readonly type: 'changedOnDisk'; readonly content: string }
+  | { readonly type: 'deletedOnDisk' }
+  /** Conflict resolved by taking the content on disk and dropping the unsaved changes. */
+  | { readonly type: 'reloadedFromDisk' }
+  /** Conflict resolved by keeping the unsaved changes; saving will overwrite the file. */
+  | { readonly type: 'keptOwnVersion' }
 
 export const EMPTY_DOCUMENT: DocumentState = {
   path: null,
   content: '',
   savedContent: '',
   generation: 0,
+  diskConflict: null,
+  missingOnDisk: false,
 }
 
 export function documentReducer(state: DocumentState, action: DocumentAction): DocumentState {
@@ -30,13 +46,46 @@ export function documentReducer(state: DocumentState, action: DocumentAction): D
         content: action.content,
         savedContent: action.content,
         generation: state.generation + 1,
+        diskConflict: null,
+        missingOnDisk: false,
       }
     case 'edited':
       return action.content === state.content ? state : { ...state, content: action.content }
     case 'saved':
       // Edits made while the save was in flight stay unsaved.
-      return { ...state, path: action.path, savedContent: action.content }
+      return {
+        ...state,
+        path: action.path,
+        savedContent: action.content,
+        diskConflict: null,
+        missingOnDisk: false,
+      }
+    case 'changedOnDisk':
+      return changedOnDisk(state, action.content)
+    case 'deletedOnDisk':
+      return { ...state, missingOnDisk: true }
+    case 'reloadedFromDisk':
+      if (state.diskConflict === null) return state
+      return reloaded(state, state.diskConflict)
+    case 'keptOwnVersion':
+      if (state.diskConflict === null) return state
+      // The file now holds the other version, so the editor's content is unsaved against it.
+      return { ...state, savedContent: state.diskConflict, diskConflict: null }
   }
+}
+
+function changedOnDisk(state: DocumentState, content: string): DocumentState {
+  // Without unsaved changes, or when both sides made the same change, nothing is lost.
+  if (!isDirty(state) || content === state.content) return reloaded(state, content)
+  return { ...state, diskConflict: content, missingOnDisk: false }
+}
+
+/**
+ * Takes the content on disk as the document. The generation stays the same: the views apply
+ * the change in place, keeping the cursor and the undo history.
+ */
+function reloaded(state: DocumentState, content: string): DocumentState {
+  return { ...state, content, savedContent: content, diskConflict: null, missingOnDisk: false }
 }
 
 export function isDirty(state: DocumentState): boolean {

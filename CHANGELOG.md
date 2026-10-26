@@ -4,6 +4,20 @@ All notable changes to MarcDoc are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- The open document follows changes other programs make to its file, such as an agent
+  editing it. Without unsaved changes, the editor shows the new content in place. With unsaved
+  changes, a banner asks whether to use the version on disk or keep your own.
+- A warning appears when the open file is deleted or moved; saving writes it again.
+
+### Fixed
+
+- Saving no longer overwrites, without warning, changes another program made to the file while
+  it was open.
+
 ## [0.1.3] - 2026-10-15
 
 ### Added

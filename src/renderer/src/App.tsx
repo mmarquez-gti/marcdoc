@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fileNameOf } from '../../core'
 import type { ViewMode } from '../../shared/ipc'
 import { Banner } from './components/Banner'
+import { DiskStatusBanner } from './components/DiskStatusBanner'
 import { ExportDialog } from './components/ExportDialog'
 import { ExportStatusBanner } from './components/ExportStatusBanner'
 import { ToolchainBanner } from './components/ToolchainBanner'
@@ -49,6 +50,11 @@ export function App() {
       {/* The document view renders its formatting toolbar here (hidden in source-only view). */}
       <div className="format-slot" ref={setToolbarSlot} />
       <ToolchainBanner />
+      <DiskStatusBanner
+        state={document.state}
+        onReload={document.reloadFromDisk}
+        onKeepOwn={document.keepOwnVersion}
+      />
       <ExportStatusBanner status={exporter.status} onDismiss={exporter.dismiss} />
       {exporter.dialogOpen && (
         <ExportDialog

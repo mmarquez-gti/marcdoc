@@ -388,6 +388,12 @@ input:focus-visible {
   font-size: 12px;
 }
 
+.banner-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 .banner-info {
   --banner-colour: var(--info);
 }

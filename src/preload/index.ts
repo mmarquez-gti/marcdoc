@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { Locale } from '../shared/i18n'
-import { IpcChannel, type MarcDocApi, type MenuCommand } from '../shared/ipc'
+import { IpcChannel, type DiskEvent, type MarcDocApi, type MenuCommand } from '../shared/ipc'
 
 const api: MarcDocApi = {
   // Synchronous once at startup, so the interface renders in the right language from the start.
@@ -23,6 +23,11 @@ const api: MarcDocApi = {
   saveDocumentAs: (content, currentPath) =>
     ipcRenderer.invoke(IpcChannel.SaveDocumentAs, content, currentPath),
   setDirty: (isDirty) => ipcRenderer.send(IpcChannel.SetDirty, isDirty),
+  onDiskEvent: (listener) => {
+    const handler = (_event: IpcRendererEvent, diskEvent: DiskEvent) => listener(diskEvent)
+    ipcRenderer.on(IpcChannel.DiskEvent, handler)
+    return () => ipcRenderer.removeListener(IpcChannel.DiskEvent, handler)
+  },
   getToolchainStatus: () => ipcRenderer.invoke(IpcChannel.GetToolchainStatus),
   listTemplates: () => ipcRenderer.invoke(IpcChannel.ListTemplates),
   chooseTemplate: () => ipcRenderer.invoke(IpcChannel.ChooseTemplate),

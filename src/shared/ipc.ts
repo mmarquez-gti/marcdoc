@@ -10,6 +10,7 @@ export const IpcChannel = {
   SaveDocument: 'document:save',
   SaveDocumentAs: 'document:save-as',
   SetDirty: 'document:set-dirty',
+  DiskEvent: 'document:disk-event',
   GetToolchainStatus: 'toolchain:status',
   ImportAsset: 'asset:import',
   ExportDocument: 'document:export',
@@ -88,6 +89,11 @@ export interface OpenedDocument {
   readonly content: string
 }
 
+/** Another program changed or removed the open document's file. */
+export type DiskEvent =
+  | { readonly kind: 'changed'; readonly path: string; readonly content: string }
+  | { readonly kind: 'deleted'; readonly path: string }
+
 export interface ToolStatus {
   readonly id: 'pandoc' | 'lualatex'
   readonly label: string
@@ -126,6 +132,8 @@ export interface MarcDocApi {
   saveDocumentAs(content: string, currentPath: string | null): Promise<string | null>
   /** Tells the main process whether closing the window would lose changes. */
   setDirty(isDirty: boolean): void
+  /** Subscribes to changes made on disk to the open document; returns an unsubscribe function. */
+  onDiskEvent(listener: (event: DiskEvent) => void): () => void
   getToolchainStatus(): Promise<ToolStatus[]>
   /**
    * Copies an image into the document's `assets/` folder; resolves to the path to use in

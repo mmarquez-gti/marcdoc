@@ -10,7 +10,7 @@ import {
   userArguments,
   type CliCommand,
 } from '../core'
-import { IpcChannel } from '../shared/ipc'
+import { IpcChannel, type DiskEvent } from '../shared/ipc'
 import {
   editorPath,
   EXIT_FAILURE,
@@ -29,6 +29,7 @@ import { importLuaFilters } from './export/filters'
 import { resourcesDir } from './export/resources'
 import { AssetService } from './services/assetService'
 import { FileService } from './services/fileService'
+import { FileWatcher } from './services/fileWatcher'
 import { ImportService } from './services/importService'
 import { LatexTemplateService } from './services/latexTemplateService'
 import { OpenRequests } from './services/openRequests'
@@ -75,7 +76,25 @@ function createMainWindow(i18n: LocaleController): MainWindow {
   })
 
   const state: WindowState = { isDirty: false }
-  const files = new FileService()
+  const files: FileService = new FileService((path) => watcher.watch(path))
+  // Reports changes other programs make to the open document, e.g. an agent editing it.
+  const watcher = new FileWatcher((path) =>
+    // E.g. the file became unreadable; the next change is checked again.
+    reportDiskChange(path).catch((error: unknown) =>
+      console.error(`Could not check ${path} for changes:`, error),
+    ),
+  )
+  const reportDiskChange = async (path: string) => {
+    // A late event for a file that is no longer shown is irrelevant.
+    if (path !== files.currentPath || window.isDestroyed()) return
+    const check = await files.checkDisk(path)
+    if (check.kind === 'unchanged' || window.isDestroyed()) return
+    const event: DiskEvent =
+      check.kind === 'changed'
+        ? { kind: 'changed', path, content: check.content }
+        : { kind: 'deleted', path }
+    window.webContents.send(IpcChannel.DiskEvent, event)
+  }
   const importer = new ImportService(files, importLuaFilters(resourcesDir()))
   const assets = new AssetService(() => files.currentPath)
   protocol.handle(ASSET_PROTOCOL, (request) => assets.serve(request.url))
@@ -111,6 +130,7 @@ function createMainWindow(i18n: LocaleController): MainWindow {
 
   // On macOS the app outlives its window; a new window registers everything again.
   window.on('closed', () => {
+    watcher.stop()
     disposeIpc()
     stopMenuUpdates()
     protocol.unhandle(ASSET_PROTOCOL)

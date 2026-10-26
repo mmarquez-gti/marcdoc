@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -44,5 +44,60 @@ describe('FileService', () => {
 
   it('refuses to write paths the user did not choose', async () => {
     await expect(service.save(join(dir, 'other.md'), 'x')).rejects.toThrow('not chosen by the user')
+  })
+
+  describe('checkDisk', () => {
+    it('reports its own writes as unchanged', async () => {
+      const path = join(dir, 'a.md')
+      writeFileSync(path, 'a\n')
+      await service.open(path)
+      await service.save(path, 'b\n')
+      expect(await service.checkDisk(path)).toEqual({ kind: 'unchanged' })
+    })
+
+    it('reports content written by another program once, with LF endings', async () => {
+      const path = join(dir, 'a.md')
+      writeFileSync(path, 'a\n')
+      await service.open(path)
+      writeFileSync(path, 'a\r\nb\r\n')
+      expect(await service.checkDisk(path)).toEqual({ kind: 'changed', content: 'a\nb\n' })
+      expect(await service.checkDisk(path)).toEqual({ kind: 'unchanged' })
+    })
+
+    it('saves with the line ending the other program used', async () => {
+      const path = join(dir, 'a.md')
+      writeFileSync(path, 'a\n')
+      await service.open(path)
+      writeFileSync(path, 'a\r\n')
+      await service.checkDisk(path)
+      await service.save(path, 'a\nb\n')
+      expect(readFileSync(path, 'utf8')).toBe('a\r\nb\r\n')
+    })
+
+    it('reports a deleted file as missing, and as changed when it comes back', async () => {
+      const path = join(dir, 'a.md')
+      writeFileSync(path, 'a\n')
+      await service.open(path)
+      unlinkSync(path)
+      expect(await service.checkDisk(path)).toEqual({ kind: 'missing' })
+      writeFileSync(path, 'a\n')
+      expect(await service.checkDisk(path)).toEqual({ kind: 'changed', content: 'a\n' })
+    })
+
+    it('refuses paths that were never opened or saved', async () => {
+      await expect(service.checkDisk(join(dir, 'other.md'))).rejects.toThrow('not opened')
+    })
+  })
+
+  it('reports when the document shown becomes a different file', async () => {
+    const shown: string[] = []
+    const watched = new FileService((path) => shown.push(path))
+    const path = join(dir, 'a.md')
+    writeFileSync(path, 'a')
+    await watched.open(path)
+    await watched.save(path, 'b')
+    await watched.open(path)
+    const copy = await watched.saveAs(join(dir, 'b.md'), 'b')
+    expect(shown).toEqual([path, copy])
   })
 })

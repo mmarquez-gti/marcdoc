@@ -21,6 +21,10 @@ export interface DocumentController {
   saveAs(): Promise<void>
   clearError(): void
   reportError(message: string): void
+  /** Resolves a conflict with the file on disk by taking its content. */
+  reloadFromDisk(): void
+  /** Resolves a conflict with the file on disk by keeping the unsaved changes. */
+  keepOwnVersion(): void
 }
 
 export function useDocument(): DocumentController {
@@ -105,6 +109,21 @@ export function useDocument(): DocumentController {
     [run, t],
   )
 
+  // Changes other programs make to the file, e.g. an agent editing it.
+  useEffect(
+    () =>
+      window.marcdoc.onDiskEvent((event) => {
+        // An event for a file that is no longer shown is stale.
+        if (event.path !== stateRef.current.path) return
+        dispatch(
+          event.kind === 'changed'
+            ? { type: 'changedOnDisk', content: event.content }
+            : { type: 'deletedOnDisk' },
+        )
+      }),
+    [],
+  )
+
   const importDocx = useCallback(
     () =>
       run(async () => {
@@ -134,6 +153,8 @@ export function useDocument(): DocumentController {
   const edit = useCallback((content: string) => dispatch({ type: 'edited', content }), [])
   const clearError = useCallback(() => setError(null), [setError])
   const reportError = useCallback((message: string) => setError(message), [setError])
+  const reloadFromDisk = useCallback(() => dispatch({ type: 'reloadedFromDisk' }), [])
+  const keepOwnVersion = useCallback(() => dispatch({ type: 'keptOwnVersion' }), [])
 
   return {
     state,
@@ -146,5 +167,7 @@ export function useDocument(): DocumentController {
     saveAs,
     clearError,
     reportError,
+    reloadFromDisk,
+    keepOwnVersion,
   }
 }
