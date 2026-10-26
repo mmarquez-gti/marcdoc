@@ -11,6 +11,7 @@ import {
   markdownToDoc,
   normalizePastedSlice,
 } from '../../../../core/markdown'
+import { reviewMarks } from '../../../../core/review/changes'
 import { diffTopLevelBlocks } from '../../../../core/sync/blockDiff'
 import { createPortal } from 'react-dom'
 import { FormatToolbar } from './FormatToolbar'
@@ -19,6 +20,7 @@ import { buildKeymaps } from './keymap'
 import { buildTablePlugins } from './tables'
 import { imageFiles, insertImages } from './insertions'
 import { ImageView, MathBlockView, MathInlineView } from './nodeViews'
+import { hasReviewMarks, reviewPlugin, setReviewMarks, type ReviewTexts } from './review'
 import { ListItemView } from './taskList'
 import type { Translate } from '../../../../shared/i18n'
 import { useT } from '../../i18n'
@@ -46,6 +48,14 @@ function applyExternalMarkdown(view: EditorView, markdown: string, sources: Bloc
   }
   // Blocks the diff kept may have been reformatted in the source (e.g. `*a*` to `_a_`).
   sources.adopt(parsed, view.state.doc)
+}
+
+function reviewTexts(t: Translate): ReviewTexts {
+  return {
+    inserted: t('review.inserted'),
+    modified: t('review.modified'),
+    deleted: t('review.deleted'),
+  }
 }
 
 /** Editor props that contain interface texts. */
@@ -93,6 +103,8 @@ interface WysiwygViewProps {
   readonly toolbarSlot: HTMLElement | null
   /** CSS with a Word template's formatting, scoped to TEMPLATE_LOOK_SCOPE; null for none. */
   readonly templateCss?: string | null
+  /** Version the changes are reviewed against; null shows no review. */
+  readonly baseline?: string | null
 }
 
 function createState(markdown: string, sources: BlockSources): EditorState {
@@ -106,6 +118,7 @@ function createState(markdown: string, sources: BlockSources): EditorState {
       history(),
       dropCursor(),
       gapCursor(),
+      reviewPlugin(),
     ],
   })
 }
@@ -117,6 +130,7 @@ export function WysiwygView({
   onError,
   toolbarSlot,
   templateCss = null,
+  baseline = null,
   ref,
 }: WysiwygViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -132,6 +146,9 @@ export function WysiwygView({
   // The view is created once per document; texts in it follow the language through setProps.
   const tRef = useRef(t)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const baselineRef = useRef(baseline)
+  // Review marks are recomputed after a pause in typing here, like source edits.
+  const reviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorState, setEditorState] = useState<EditorState | null>(null)
   // Kept in state as well, because the toolbar renders from it.
   const [toolbarView, setToolbarView] = useState<EditorView | null>(null)
@@ -151,9 +168,27 @@ export function WysiwygView({
     const markdown = pendingRef.current
     const view = viewRef.current
     cancelPending()
-    if (markdown !== null && view) applyExternalMarkdown(view, markdown, sourcesRef.current)
+    if (markdown !== null && view) {
+      applyExternalMarkdown(view, markdown, sourcesRef.current)
+      refreshReview()
+    }
     // Never consume the event: ProseMirror must still handle it.
     return false
+  }
+
+  /**
+   * Shows the changes between the reviewed version and the Markdown on display. Waits while a
+   * source edit is pending: the marks must be located on the document they were computed for.
+   */
+  function refreshReview(): void {
+    if (reviewTimerRef.current !== null) clearTimeout(reviewTimerRef.current)
+    reviewTimerRef.current = null
+    const view = viewRef.current
+    if (!view || pendingRef.current !== null) return
+    const reviewed = baselineRef.current
+    if (reviewed === null && !hasReviewMarks(view.state)) return
+    const marks = reviewed === null ? null : reviewMarks(reviewed, lastMarkdownRef.current)
+    view.dispatch(setReviewMarks(view.state, marks, reviewTexts(tRef.current)))
   }
 
   useEffect(() => {
@@ -210,8 +245,11 @@ export function WysiwygView({
     lastMarkdownRef.current = value
     setEditorState(view.state)
     setToolbarView(view)
+    refreshReview()
     return () => {
       cancelPending()
+      if (reviewTimerRef.current !== null) clearTimeout(reviewTimerRef.current)
+      reviewTimerRef.current = null
       view.destroy()
       viewRef.current = null
       setToolbarView(null)
@@ -223,6 +261,11 @@ export function WysiwygView({
   useEffect(() => {
     if (value === lastMarkdownRef.current) {
       cancelPending()
+      // An edit made here: the marks follow it until they are recomputed.
+      if (baselineRef.current !== null) {
+        if (reviewTimerRef.current !== null) clearTimeout(reviewTimerRef.current)
+        reviewTimerRef.current = setTimeout(refreshReview, SOURCE_SYNC_DELAY_MS)
+      }
       return
     }
     lastMarkdownRef.current = value
@@ -234,8 +277,14 @@ export function WysiwygView({
   }, [value])
 
   useEffect(() => {
+    baselineRef.current = baseline
+    refreshReview()
+  }, [baseline])
+
+  useEffect(() => {
     tRef.current = t
     viewRef.current?.setProps(localizedProps(t))
+    refreshReview()
   }, [t])
 
   useImperativeHandle(

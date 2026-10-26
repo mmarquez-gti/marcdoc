@@ -16,6 +16,8 @@ All notable changes to MarcDoc are recorded here. The format follows
   MarcDoc was closed, the source view shows what changed since you last reviewed the document.
   Accept or reject each change, or all at once from the review bar. The reviewed version is
   kept in MarcDoc's own settings folder, not next to your files.
+- The document view highlights the paragraphs added or changed since your last review and
+  shows deleted text struck through where it was.
 
 ### Fixed
 

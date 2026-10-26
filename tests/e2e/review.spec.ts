@@ -142,3 +142,23 @@ test('moves between changes from the review bar', async () => {
   await app.page.getByRole('button', { name: 'Previous change' }).click()
   await expect(activeLine).toHaveText('First paragraph, rewritten.')
 })
+
+test('highlights changes and deleted text in the document view', async () => {
+  const app = await open()
+  const page = app.page.locator('.wysiwyg-view')
+  writeFileSync(path, CHANGED)
+
+  await expect(page.locator('.review-modified')).toHaveText('First paragraph, rewritten.')
+  await expect(page.locator('.review-inserted')).toHaveText('Added paragraph.')
+  await app.page.screenshot({ path: '.work/screens/h5.3-review-changed.png' })
+
+  await app.page.getByRole('button', { name: 'Accept all' }).click()
+  await expect(page.locator('.review-modified, .review-inserted')).toHaveCount(0)
+
+  writeFileSync(path, CHANGED.replace('Second paragraph.\n\n', ''))
+  await expect(page.locator('.review-deleted')).toHaveText('Second paragraph.')
+  await app.page.screenshot({ path: '.work/screens/h5.3-review-document.png' })
+  await app.page.getByRole('button', { name: 'Reject all' }).click()
+  await expect(page.locator('.review-deleted')).toHaveCount(0)
+  await expect(page).toContainText('Second paragraph.')
+})

@@ -405,6 +405,52 @@ input:focus-visible {
   margin-right: 6px;
 }
 
+/* Changes under review in the document view (ADR-0008). The bar and the tint extend into the
+   margin without touching the block's own box, which a Word template's look may style. */
+.wysiwyg-content {
+  --review-gutter: 10px;
+  --review-bar: 3px;
+}
+
+.wysiwyg-content .review-inserted,
+.wysiwyg-content .review-modified,
+.wysiwyg-content .review-deleted {
+  --review-tint: color-mix(in srgb, var(--review-colour) 10%, transparent);
+  position: relative;
+  background: var(--review-tint);
+  box-shadow: calc(-1 * var(--review-gutter)) 0 0 0 var(--review-tint);
+}
+
+.wysiwyg-content .review-inserted::before,
+.wysiwyg-content .review-modified::before,
+.wysiwyg-content .review-deleted::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--review-gutter));
+  width: var(--review-bar);
+  background: var(--review-colour);
+}
+
+.wysiwyg-content .review-inserted {
+  --review-colour: var(--success);
+}
+
+.wysiwyg-content .review-modified {
+  --review-colour: var(--warning);
+}
+
+.wysiwyg-content .review-deleted {
+  --review-colour: var(--danger);
+  margin: 0.5em 0;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  text-decoration: line-through;
+  white-space: pre-wrap;
+  user-select: none;
+}
+
 .banner-info {
   --banner-colour: var(--info);
 }

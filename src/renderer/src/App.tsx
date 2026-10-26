@@ -102,6 +102,7 @@ export function App() {
           onChange={document.edit}
           onError={document.reportError}
           templateCss={templateCss}
+          baseline={baseline}
         />
         <CodeView
           ref={codeRef}
