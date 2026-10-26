@@ -91,6 +91,12 @@ test('keeps both views consistent across alternating edits', async () => {
   await expect(wysiwyg(page).locator('li')).toHaveCount(2)
 
   await wysiwyg(page).locator('li').last().click()
+  // ProseMirror takes in the clicked position on Chromium's "selectionchange" event, which can
+  // arrive after the next synthetic keystroke; the toolbar shows when the cursor is in the list.
+  await expect(page.getByRole('button', { name: /Bulleted list/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await page.keyboard.press('End')
   await page.keyboard.press('Enter')
   await page.keyboard.type('three')

@@ -34,6 +34,16 @@ async function sourceText(page: Page): Promise<string> {
   )
 }
 
+/**
+ * Waits until the editor has taken in a selection made with the keyboard. Chromium reports it
+ * with a "selectionchange" event that can arrive after the next synthetic keystroke, and
+ * ProseMirror reads the selection only on that event; the Link button is enabled only for a
+ * non-empty selection in the editor state.
+ */
+async function expectSelectionRegistered(page: Page): Promise<void> {
+  await expect(page.getByRole('button', { name: 'Link' })).toBeEnabled()
+}
+
 async function openFixture(name: string): Promise<void> {
   const path = join(workDir, name)
   copyFileSync(join(CORPUS, name), path)
@@ -73,6 +83,7 @@ test('applies formatting from the toolbar and keyboard', async () => {
   await wysiwyg(page).click()
   await page.keyboard.type('Make me bold')
   await page.keyboard.press('Shift+Home')
+  await expectSelectionRegistered(page)
   await page.keyboard.press('Control+B')
   await expect(wysiwyg(page).locator('strong')).toHaveText('Make me bold')
 
@@ -136,6 +147,7 @@ test('applies strikethrough from the toolbar', async () => {
   await wysiwyg(page).click()
   await page.keyboard.type('obsolete')
   await page.keyboard.press('Shift+Home')
+  await expectSelectionRegistered(page)
   await page.getByRole('button', { name: /Strikethrough/ }).click()
   await expect.poll(() => sourceText(page)).toBe('~~obsolete~~\n')
 })
