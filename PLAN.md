@@ -258,6 +258,18 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | H4.2 | i18n de la interfaz (inglés y español): menús, barras, diálogos y avisos; idioma del sistema con opción para cambiarlo | 2 sem | — |
 | H4.3 | Windows y macOS: código portable (rutas, `TEXINPUTS`, menús), objetivos de empaquetado. **Sin verificación en esos sistemas**: no hay equipos ni CI; queda documentado como riesgo | 2 sem | H3.3 |
 
+### Fase 5 — Revisión de cambios externos (≈ 4–5 semanas)
+
+Ver ADR-0008. Objetivo: ver resaltado lo que otro programa (sobre todo Claude Code) ha cambiado en el `.md` desde la última revisión, y aceptar o rechazar cada cambio. Sin git.
+
+| Hito | Tareas | Duración | Depende de |
+|---|---|---|---|
+| H5.0 | ADR-0008, esta sección del plan y la dependencia `@codemirror/merge` (6.12.2) | 0,5 sem | — |
+| H5.1 | Vigilar el archivo abierto (`FileWatcher` en main, *debounce*, ignorar escrituras propias); canal `document:changed-on-disk`; recarga con cambio mínimo si no hay cambios sin guardar; banner de conflicto (recargar o mantener la propia); aviso si se borra el archivo | 1 sem | H5.0 |
+| H5.2 | Línea base en `userData/review/` (`ReviewStore`); lógica pura en `core/review/` (fragmentos, aceptar, rechazar, pendientes); `unifiedMergeView` en la vista de código; barra de revisión (contador, anterior/siguiente, aceptar todo, rechazar todo, marcar como revisado); revisión al abrir si el disco difiere de la línea base | 1,5–2 sem | H5.1 |
+| H5.3 | Resaltado en el WYSIWYG: decoraciones en bloques añadidos o modificados y marcas de borrado; barra de revisión en todas las vistas | 1–1,5 sem | H5.2 |
+| H5.4 | (Opcional) Historial de versiones: instantáneas al abrir, al guardar y ante cambios externos, con autor; panel para comparar y restaurar; retención limitada | 2 sem | H5.2 |
+
 ### Calendario orientativo
 
 | Fase | Inicio | Fin |
@@ -292,6 +304,8 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | R10 | Poca dedicación semanal: se amplía el alcance o se pierde el contexto entre sesiones | Alta | Medio | Hitos pequeños, ADRs y notas de estado en cada hito |
 | R11 | Un test e2e de escritura en el WYSIWYG falla de forma intermitente (≈1 de cada 6 ejecuciones completas, siempre tras las pruebas de integración); causa no identificada | Media | Bajo | Investigar si es el test o el editor bajo carga; no se ha ocultado con reintentos |
 | R12 | Windows y macOS no se han probado (ADR-0005) | Alta | Alto | CI con ejecutores Windows/macOS o prueba manual antes de anunciar soporte |
+| R13 | Hasta H5.1, guardar sobrescribe sin aviso los cambios hechos en disco por otro programa con el documento abierto | Alta | Alto | H5.1 vigila el archivo y avisa del conflicto antes de guardar |
+| R14 | La revisión en el WYSIWYG es por bloque, menos precisa que en la vista de código; con cambios propios y externos a la vez solo se conserva una versión | Media | Medio | Documentado en ADR-0008; ampliar a fusión o a revisión por palabra si el uso lo pide |
 
 ## 8. Supuestos y preguntas abiertas
 
@@ -332,3 +346,4 @@ Estimación con unas 4 h/semana. Cada hito es una o dos sesiones de trabajo, dej
 | 09/10/2026 | H4.2 | Interfaz en inglés y español; idioma del sistema o elegido en Ver → Idioma, guardado en la configuración del usuario |
 | 09/10/2026 | H4.3 | Código portable (rutas, `TEXINPUTS`, CRLF, convenciones de macOS) y objetivos de Windows y macOS. **Sin probar en esos sistemas** (ADR-0005) |
 | 09/10/2026 | **Fase 4 completada** | 225 tests unitarios, 59 de integración, 52 e2e y la prueba del paquete. Pendiente: revisión en Word Online; pruebas en Windows y macOS |
+| 26/10/2026 | H5.0 | ADR-0008: revisión de cambios externos sin git, línea base en `userData`, `@codemirror/merge` 6.12.2. Siguiente: H5.1 (vigilar el archivo) |
